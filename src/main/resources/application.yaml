@@ -1,0 +1,12 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: ncrm-backend
+  jpa:
+    hibernate:
+      # Liquibase manages the schema; Hibernate only validates that entities match the database.
+      ddl-auto: validate
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml
