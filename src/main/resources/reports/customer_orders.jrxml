@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Customer report: overview of the customer's own orders with totals. JasperReports 7 format. -->
+<jasperReport name="customer_orders" language="java" pageWidth="595" pageHeight="842" columnWidth="535"
+              leftMargin="30" rightMargin="30" topMargin="30" bottomMargin="30">
+
+    <parameter name="REPORT_TITLE" class="java.lang.String"/>
+
+    <field name="orderNumber" class="java.lang.String"/>
+    <field name="orderDate" class="java.lang.String"/>
+    <field name="status" class="java.lang.String"/>
+    <field name="totalPrice" class="java.math.BigDecimal"/>
+    <field name="currency" class="java.lang.String"/>
+
+    <title height="40">
+        <element kind="textField" x="0" y="0" width="535" height="30" fontSize="18.0" bold="true">
+            <expression><![CDATA[$P{REPORT_TITLE}]]></expression>
+        </element>
+    </title>
+
+    <columnHeader height="20">
+        <element kind="staticText" x="0" y="0" width="160" height="20" bold="true">
+            <text><![CDATA[Order number]]></text>
+        </element>
+        <element kind="staticText" x="160" y="0" width="100" height="20" bold="true">
+            <text><![CDATA[Date]]></text>
+        </element>
+        <element kind="staticText" x="260" y="0" width="100" height="20" bold="true">
+            <text><![CDATA[Status]]></text>
+        </element>
+        <element kind="staticText" x="360" y="0" width="115" height="20" bold="true">
+            <text><![CDATA[Total]]></text>
+        </element>
+        <element kind="staticText" x="475" y="0" width="60" height="20" bold="true">
+            <text><![CDATA[Currency]]></text>
+        </element>
+    </columnHeader>
+
+    <detail>
+        <band height="20">
+            <element kind="textField" x="0" y="0" width="160" height="20">
+                <expression><![CDATA[$F{orderNumber}]]></expression>
+            </element>
+            <element kind="textField" x="160" y="0" width="100" height="20" blankWhenNull="true">
+                <expression><![CDATA[$F{orderDate}]]></expression>
+            </element>
+            <element kind="textField" x="260" y="0" width="100" height="20" blankWhenNull="true">
+                <expression><![CDATA[$F{status}]]></expression>
+            </element>
+            <element kind="textField" x="360" y="0" width="115" height="20" pattern="#,##0.00" blankWhenNull="true">
+                <expression><![CDATA[$F{totalPrice}]]></expression>
+            </element>
+            <element kind="textField" x="475" y="0" width="60" height="20" blankWhenNull="true">
+                <expression><![CDATA[$F{currency}]]></expression>
+            </element>
+        </band>
+    </detail>
+</jasperReport>

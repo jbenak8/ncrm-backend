@@ -54,12 +54,10 @@ public class CompanyEntity {
     @ToString.Exclude
     private AddressEntity address;
 
-    @Column(name = "registration_note")
-    @Lob
+    @Column(name = "registration_note", length = Integer.MAX_VALUE)
     private String registrationNote;
 
-    @Column(name = "registration_note_en")
-    @Lob
+    @Column(name = "registration_note_en", length = Integer.MAX_VALUE)
     private String registrationNoteEn;
 
     @Column(name = "phone")

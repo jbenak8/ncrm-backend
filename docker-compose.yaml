@@ -1,0 +1,58 @@
+# Local / staging deployment: PostgreSQL, Keycloak (identity provider), MailHog (SMTP catcher) and the backend.
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: nCRM
+      POSTGRES_USER: ncrm
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-nCRM123}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ncrm -d nCRM" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.2
+    command: start-dev
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+    ports:
+      - "8081:8080"
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
+  backend:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_URL: jdbc:postgresql://postgres:5432/nCRM
+      DB_USERNAME: ncrm
+      DB_PASSWORD: ${DB_PASSWORD:-nCRM123}
+      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/ncrm
+      MAIL_HOST: mailhog
+      MAIL_PORT: 1025
+      MAIL_USERNAME: ""
+      MAIL_PASSWORD: ""
+      NCRM_CORS_ALLOWED_ORIGINS: http://localhost:3000
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    ports:
+      - "8080:8080"
+
+volumes:
+  postgres-data:

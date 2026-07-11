@@ -1,0 +1,22 @@
+# Test profile: self-contained in-memory H2 database (PostgreSQL compatibility mode),
+# schema created by Hibernate, Liquibase disabled. No external services are required.
+spring:
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:ncrm;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
+    username: sa
+    password: sa
+    hikari:
+      schema: public
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+
+  liquibase:
+    enabled: false
+
+ncrm:
+  security:
+    local-users:
+      password: test

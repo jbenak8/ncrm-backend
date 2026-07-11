@@ -1,0 +1,111 @@
+# Kubernetes deployment of the nCRM backend (Deployment + Service + Ingress + ConfigMap + Secret template).
+# Apply with: kubectl apply -f ncrm-backend.yaml -n ncrm
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ncrm-backend-config
+data:
+  SPRING_PROFILES_ACTIVE: "prod"
+  DB_URL: "jdbc:postgresql://postgres:5432/nCRM"
+  KEYCLOAK_ISSUER_URI: "https://keycloak.example.com/realms/ncrm"
+  MAIL_HOST: "smtp.example.com"
+  MAIL_PORT: "587"
+  NCRM_CORS_ALLOWED_ORIGINS: "https://crm.example.com"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ncrm-backend-secrets
+type: Opaque
+stringData:
+  DB_USERNAME: "ncrm"
+  DB_PASSWORD: "change-me"
+  MAIL_USERNAME: "change-me"
+  MAIL_PASSWORD: "change-me"
+  ANTHROPIC_API_KEY: "change-me"
+  OPENAI_API_KEY: "change-me"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ncrm-backend
+  labels:
+    app: ncrm-backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ncrm-backend
+  template:
+    metadata:
+      labels:
+        app: ncrm-backend
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+      containers:
+        - name: ncrm-backend
+          image: registry.example.com/ncrm/ncrm-backend:latest
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: ncrm-backend-config
+            - secretRef:
+                name: ncrm-backend-secrets
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+            initialDelaySeconds: 60
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8080
+            initialDelaySeconds: 30
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ "ALL" ]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ncrm-backend
+spec:
+  selector:
+    app: ncrm-backend
+  ports:
+    - port: 80
+      targetPort: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ncrm-backend
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+spec:
+  tls:
+    - hosts: [ "api.crm.example.com" ]
+      secretName: ncrm-backend-tls
+  rules:
+    - host: api.crm.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: ncrm-backend
+                port:
+                  number: 80

@@ -1,0 +1,27 @@
+# Local testing profile: HTTP Basic with in-memory users (owner / rep / customer, password "test"),
+# local PostgreSQL and a local SMTP catcher (e.g. MailHog on port 1025). No Keycloak needed.
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+  mail:
+    host: localhost
+    port: 1025
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+
+logging:
+  level:
+    cz.jbenak.ncrm_backend: DEBUG
+
+ncrm:
+  security:
+    local-users:
+      # Password for the in-memory test users (owner / rep / customer); local testing only.
+      password: ${LOCAL_USER_PASSWORD}

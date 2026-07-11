@@ -63,8 +63,7 @@ public class CustomerEntity extends AuditableEntity {
     @Builder.Default
     private boolean active = true;
 
-    @Column(name = "note")
-    @Lob
+    @Column(name = "note", length = Integer.MAX_VALUE)
     private String note;
 
     @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, orphanRemoval = true)
