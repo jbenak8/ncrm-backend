@@ -54,7 +54,8 @@ public class AresService {
         }
         String houseNumber = sidlo.cisloDomovni() == null ? null : String.valueOf(sidlo.cisloDomovni());
         String zipCode = sidlo.psc() == null ? null : String.valueOf(sidlo.psc());
-        return new AddressDto(null, sidlo.nazevUlice(), houseNumber, sidlo.nazevObce(), zipCode,
+        String streetNumber = sidlo.cisloOrientacni() == null ? null : String.valueOf(sidlo.cisloOrientacni());
+        return new AddressDto(null, sidlo.nazevUlice(), houseNumber, streetNumber, sidlo.nazevObce(), zipCode,
                 sidlo.kodStatu(), sidlo.nazevStatu());
     }
 
@@ -66,7 +67,7 @@ public class AresService {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    record AresAddress(String nazevUlice, Integer cisloDomovni, String nazevObce, Integer psc,
+    record AresAddress(String nazevUlice, Integer cisloDomovni, Integer cisloOrientacni, String nazevObce, Integer psc,
                        String kodStatu, String nazevStatu) {
     }
 }

@@ -108,6 +108,7 @@ public class SecurityConfig {
                                          @Value("${ncrm.security.local-users.password}") String localUsersPassword) {
         String password = passwordEncoder.encode(localUsersPassword);
         return new InMemoryUserDetailsManager(
+                User.withUsername("admin").password(password).roles("ADMIN").build(),
                 User.withUsername("owner").password(password).roles("OWNER").build(),
                 User.withUsername("rep").password(password).roles("SALES_REPRESENTATIVE").build(),
                 User.withUsername("customer").password(password).roles("CUSTOMER").build());

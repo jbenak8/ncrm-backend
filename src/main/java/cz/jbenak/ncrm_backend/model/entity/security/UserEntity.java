@@ -57,6 +57,10 @@ public class UserEntity extends AuditableEntity {
     @Builder.Default
     private boolean enabled = true;
 
+    @Column(name = "must_change_password", nullable = false)
+    @Builder.Default
+    private boolean mustChangePassword = false;
+
     @Column(name = "locked", nullable = false)
     @Builder.Default
     private boolean locked = false;

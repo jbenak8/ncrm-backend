@@ -27,6 +27,9 @@ public class AddressEntity {
     @Column(name = "house_number")
     private String houseNumber;
 
+    @Column(name = "street_number")
+    private String streetNumber; // Optional field for combined street and house number
+
     @Column(name = "city")
     private String city;
 

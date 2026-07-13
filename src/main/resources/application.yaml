@@ -42,10 +42,17 @@ spring:
         model: gpt-4o-mini
 
   mail:
-    host: ${MAIL_HOST:localhost}
-    port: ${MAIL_PORT:1025}
+    host: ${MAIL_HOST}
+    port: ${MAIL_PORT}
     username: ${MAIL_USERNAME:}
     password: ${MAIL_PASSWORD:}
+    protocol: smtp
+    properties:
+        mail:
+            auth: ${MAIL_SMTP_AUTH}
+            starttls:
+                enable: ${MAIL_SMTP_STARTTLS_ENABLE}
+    test-connection: true
 
 ncrm:
   security:

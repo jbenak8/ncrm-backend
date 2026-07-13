@@ -1,22 +1,30 @@
 package cz.jbenak.ncrm_backend.services;
 
 import cz.jbenak.ncrm_backend.model.dto.security.UserDto;
+import cz.jbenak.ncrm_backend.model.dto.security.UserRequest;
+import cz.jbenak.ncrm_backend.model.entity.company.SalesRepresentativeEntity;
+import cz.jbenak.ncrm_backend.model.entity.security.RoleEntity;
 import cz.jbenak.ncrm_backend.model.entity.security.UserEntity;
 import cz.jbenak.ncrm_backend.model.mapper.UserMapper;
+import cz.jbenak.ncrm_backend.repository.RoleRepository;
 import cz.jbenak.ncrm_backend.repository.SalesRepresentativeRepository;
 import cz.jbenak.ncrm_backend.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -34,7 +42,11 @@ class UserServiceTest {
     @Mock
     private SalesRepresentativeRepository salesRepresentativeRepository;
     @Mock
+    private RoleRepository roleRepository;
+    @Mock
     private UserMapper userMapper;
+    @Mock
+    private PasswordEncoder passwordEncoder;
 
     @InjectMocks
     private UserService userService;
@@ -119,6 +131,111 @@ class UserServiceTest {
         userService.setEnabled(id, false);
 
         assertThat(user.isEnabled()).isFalse();
+    }
+
+    private UserRequest userRequest(String password) {
+        return new UserRequest("john", "john@example.com", password, "John", "Doe", true, false, Set.of("OWNER"));
+    }
+
+    @Test
+    void createEncodesPasswordAndResolvesRoles() {
+        when(userRepository.existsByUsername("john")).thenReturn(false);
+        when(userRepository.existsByEmail("john@example.com")).thenReturn(false);
+        when(userMapper.toEntity(any(UserRequest.class))).thenReturn(new UserEntity());
+        when(passwordEncoder.encode("secret-password")).thenReturn("hash");
+        RoleEntity role = new RoleEntity();
+        role.setName("OWNER");
+        when(roleRepository.findByName("OWNER")).thenReturn(Optional.of(role));
+        when(userRepository.save(any(UserEntity.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        userService.create(userRequest("secret-password"));
+
+        ArgumentCaptor<UserEntity> captor = ArgumentCaptor.forClass(UserEntity.class);
+        verify(userRepository).save(captor.capture());
+        assertThat(captor.getValue().getPasswordHash()).isEqualTo("hash");
+        assertThat(captor.getValue().getRoles()).containsExactly(role);
+    }
+
+    @Test
+    void createRejectsDuplicateUsername() {
+        when(userRepository.existsByUsername("john")).thenReturn(true);
+
+        assertThatThrownBy(() -> userService.create(userRequest("secret-password")))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("john");
+    }
+
+    @Test
+    void createRejectsMissingPassword() {
+        when(userRepository.existsByUsername("john")).thenReturn(false);
+        when(userRepository.existsByEmail("john@example.com")).thenReturn(false);
+
+        assertThatThrownBy(() -> userService.create(userRequest(null)))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Password");
+    }
+
+    @Test
+    void updateKeepsPasswordWhenBlank() {
+        UUID id = UUID.randomUUID();
+        UserEntity entity = new UserEntity();
+        entity.setId(id);
+        entity.setPasswordHash("original-hash");
+        when(userRepository.findById(id)).thenReturn(Optional.of(entity));
+        when(userRepository.findByUsername("john")).thenReturn(Optional.empty());
+        when(userRepository.findByEmail("john@example.com")).thenReturn(Optional.empty());
+        RoleEntity role = new RoleEntity();
+        role.setName("OWNER");
+        when(roleRepository.findByName("OWNER")).thenReturn(Optional.of(role));
+        when(userRepository.save(entity)).thenReturn(entity);
+
+        userService.update(id, userRequest(null));
+
+        assertThat(entity.getPasswordHash()).isEqualTo("original-hash");
+        verify(passwordEncoder, never()).encode(any());
+    }
+
+    @Test
+    void updateRejectsUsernameOfAnotherUser() {
+        UUID id = UUID.randomUUID();
+        UserEntity entity = new UserEntity();
+        entity.setId(id);
+        UserEntity other = new UserEntity();
+        other.setId(UUID.randomUUID());
+        when(userRepository.findById(id)).thenReturn(Optional.of(entity));
+        when(userRepository.findByUsername("john")).thenReturn(Optional.of(other));
+
+        assertThatThrownBy(() -> userService.update(id, userRequest(null)))
+                .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void deleteRemovesUser() {
+        UUID id = UUID.randomUUID();
+        UserEntity entity = new UserEntity();
+        entity.setUsername("john");
+        when(userRepository.findById(id)).thenReturn(Optional.of(entity));
+        when(salesRepresentativeRepository.findByUserUsername("john")).thenReturn(Optional.empty());
+
+        userService.delete(id);
+
+        verify(userRepository).delete(entity);
+    }
+
+    @Test
+    void deleteRejectsUserLinkedToRepresentative() {
+        UUID id = UUID.randomUUID();
+        UserEntity entity = new UserEntity();
+        entity.setUsername("john");
+        SalesRepresentativeEntity rep = new SalesRepresentativeEntity();
+        rep.setCode("REP1");
+        when(userRepository.findById(id)).thenReturn(Optional.of(entity));
+        when(salesRepresentativeRepository.findByUserUsername("john")).thenReturn(Optional.of(rep));
+
+        assertThatThrownBy(() -> userService.delete(id))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("REP1");
+        verify(userRepository, never()).delete(entity);
     }
 
     @Test

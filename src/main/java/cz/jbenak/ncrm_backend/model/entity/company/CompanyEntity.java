@@ -81,6 +81,13 @@ public class CompanyEntity {
     @Column(name = "bic")
     private String bic;
 
+    @Column(name = "logo")
+    @ToString.Exclude
+    private byte[] logo;
+
+    @Column(name = "logo_content_type", length = 100)
+    private String logoContentType;
+
     @Column(name = "active")
     private boolean active = true;
 

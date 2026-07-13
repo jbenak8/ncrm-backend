@@ -111,7 +111,7 @@ class CustomerServiceTest {
     @Test
     void createResolvesSalesRepresentativeAndCountry() {
         UUID repId = UUID.randomUUID();
-        AddressDto address = new AddressDto(null, "Ulice", "1", "Praha", "11000", "CZ", "Česko");
+        AddressDto address = new AddressDto(null, "Ulice", "1", null, "Praha", "11000", "CZ", "Česko");
         CustomerRequest request = request(repId, address);
         CustomerEntity entity = new CustomerEntity();
         SalesRepresentativeEntity rep = new SalesRepresentativeEntity();

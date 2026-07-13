@@ -3,3 +3,7 @@ databaseChangeLog:
       file: db/changelog/changes/001-initial-schema.yaml
   - include:
       file: db/changelog/changes/002-marketing-campaigns.yaml
+  - include:
+      file: db/changelog/changes/003-company-logo.yaml
+  - include:
+      file: db/changelog/changes/004-default-admin-user.yaml

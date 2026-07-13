@@ -2,12 +2,15 @@ package cz.jbenak.ncrm_backend.model.mapper;
 
 import cz.jbenak.ncrm_backend.configuration.MapstructConfig;
 import cz.jbenak.ncrm_backend.model.dto.company.SalesRepresentativeDto;
+import cz.jbenak.ncrm_backend.model.dto.company.SalesRepresentativeRequest;
 import cz.jbenak.ncrm_backend.model.dto.security.UserDto;
+import cz.jbenak.ncrm_backend.model.dto.security.UserRequest;
 import cz.jbenak.ncrm_backend.model.entity.company.SalesRepresentativeEntity;
 import cz.jbenak.ncrm_backend.model.entity.security.RoleEntity;
 import cz.jbenak.ncrm_backend.model.entity.security.UserEntity;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 
 import java.util.List;
 import java.util.Set;
@@ -32,6 +35,38 @@ public interface UserMapper {
     SalesRepresentativeDto toDto(SalesRepresentativeEntity entity);
 
     List<SalesRepresentativeDto> toRepresentativeDtoList(List<SalesRepresentativeEntity> entities);
+
+    // The password hash and roles are resolved by the service; audit and login metadata are managed elsewhere.
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "passwordHash", ignore = true)
+    @Mapping(target = "roles", ignore = true)
+    @Mapping(target = "credentialsExpired", ignore = true)
+    @Mapping(target = "lastLoginAt", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    UserEntity toEntity(UserRequest request);
+
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "passwordHash", ignore = true)
+    @Mapping(target = "roles", ignore = true)
+    @Mapping(target = "credentialsExpired", ignore = true)
+    @Mapping(target = "lastLoginAt", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    void updateEntity(UserRequest request, @MappingTarget UserEntity entity);
+
+    // The linked user account is resolved by the service.
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "user", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    SalesRepresentativeEntity toEntity(SalesRepresentativeRequest request);
+
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "user", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    void updateEntity(SalesRepresentativeRequest request, @MappingTarget SalesRepresentativeEntity entity);
 
     default Set<String> mapRoles(Set<RoleEntity> roles) {
         return roles == null ? Set.of() : roles.stream().map(RoleEntity::getName).collect(Collectors.toSet());

@@ -1,0 +1,11 @@
+databaseChangeLog:
+
+  - changeSet:
+      id: 003-01-company-logo
+      author: jbenak
+      changes:
+        - addColumn:
+            tableName: companies
+            columns:
+              - column: { name: logo, type: bytea }
+              - column: { name: logo_content_type, type: varchar(100) }

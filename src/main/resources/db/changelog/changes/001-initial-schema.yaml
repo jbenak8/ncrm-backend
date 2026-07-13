@@ -27,6 +27,7 @@ databaseChangeLog:
               - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
               - column: { name: street, type: varchar(255) }
               - column: { name: house_number, type: varchar(255) }
+              - column: { name: street_number, type: varchar(255) }
               - column: { name: city, type: varchar(255) }
               - column: { name: zip_code, type: varchar(255) }
               - column: { name: country_id, type: varchar(3), constraints: { foreignKeyName: fk_addresses_country, references: countries(iso_code) } }
@@ -98,6 +99,7 @@ databaseChangeLog:
               - column: { name: first_name, type: varchar(100), constraints: { nullable: false } }
               - column: { name: last_name, type: varchar(100), constraints: { nullable: false } }
               - column: { name: enabled, type: boolean, defaultValueBoolean: true, constraints: { nullable: false } }
+              - column: { name: must_change_password, type: boolean, defaultValueBoolean: false, constraints: { nullable: false } }
               - column: { name: locked, type: boolean, defaultValueBoolean: false, constraints: { nullable: false } }
               - column: { name: credentials_expired, type: boolean, defaultValueBoolean: false, constraints: { nullable: false } }
               - column: { name: last_login_at, type: timestamp }
@@ -367,11 +369,17 @@ databaseChangeLog:
             tableName: roles
             columns:
               - column: { name: id, valueComputed: gen_random_uuid() }
+              - column: { name: name, value: ROLE_OWNER }
+              - column: { name: description, value: Full access to the assigned company's data. }
+        - insert:
+            tableName: roles
+            columns:
+              - column: { name: id, valueComputed: gen_random_uuid() }
               - column: { name: name, value: ROLE_SALES_REPRESENTATIVE }
               - column: { name: description, value: Sales representative conducting meetings and creating orders. }
         - insert:
             tableName: roles
             columns:
               - column: { name: id, valueComputed: gen_random_uuid() }
-              - column: { name: name, value: ROLE_USER }
-              - column: { name: description, value: Regular user with read-only access. }
+              - column: { name: name, value: ROLE_CUSTOMER }
+              - column: { name: description, value: Registered customer with limited access. }

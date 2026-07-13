@@ -12,6 +12,7 @@ public record AddressDto(
         UUID id,
         String street,
         String houseNumber,
+        String streetNumber,
         String city,
         String zipCode,
         String countryIsoCode,

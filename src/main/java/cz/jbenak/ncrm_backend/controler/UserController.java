@@ -2,8 +2,11 @@ package cz.jbenak.ncrm_backend.controler;
 
 import cz.jbenak.ncrm_backend.model.dto.company.SalesRepresentativeDto;
 import cz.jbenak.ncrm_backend.model.dto.security.UserDto;
+import cz.jbenak.ncrm_backend.model.dto.security.UserRequest;
 import cz.jbenak.ncrm_backend.services.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -41,6 +44,26 @@ public class UserController {
     @PreAuthorize("hasAnyRole('OWNER', 'SALES_REPRESENTATIVE')")
     public List<SalesRepresentativeDto> findAllSalesRepresentatives() {
         return userService.findAllSalesRepresentatives();
+    }
+
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasRole('OWNER')")
+    public UserDto create(@Valid @RequestBody UserRequest request) {
+        return userService.create(request);
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('OWNER')")
+    public UserDto update(@PathVariable UUID id, @Valid @RequestBody UserRequest request) {
+        return userService.update(id, request);
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasRole('OWNER')")
+    public void delete(@PathVariable UUID id) {
+        userService.delete(id);
     }
 
     @PostMapping("/{id}/locked/{locked}")
