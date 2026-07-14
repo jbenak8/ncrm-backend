@@ -29,39 +29,51 @@ public class CustomerController {
     private final CustomerService customerService;
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('OWNER', 'SALES_REPRESENTATIVE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'SALES_REPRESENTATIVE')")
     public Page<CustomerDto> findAll(@RequestParam(required = false) String name, Pageable pageable) {
         return customerService.findAll(name, pageable);
     }
 
+    /**
+     * Generic search endpoint. Accepts repeatable {@code filter} query parameters in the form
+     * {@code field:operator:value} (operators: contains, notContains, eq, neq, lt, gt, between;
+     * for between the value is {@code lower,upper}). All filters are combined with AND.
+     * Example: {@code /api/customers/search?filter=name:contains:teza&filter=active:eq:true}
+     */
+    @GetMapping("/search")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'SALES_REPRESENTATIVE')")
+    public Page<CustomerDto> search(@RequestParam(required = false) List<String> filter, Pageable pageable) {
+        return customerService.search(filter, pageable);
+    }
+
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('OWNER', 'SALES_REPRESENTATIVE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'SALES_REPRESENTATIVE')")
     public CustomerDto findById(@PathVariable UUID id) {
         return customerService.findById(id);
     }
 
     @GetMapping("/by-representative/{salesRepresentativeId}")
-    @PreAuthorize("hasAnyRole('OWNER', 'SALES_REPRESENTATIVE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'SALES_REPRESENTATIVE')")
     public List<CustomerDto> findBySalesRepresentative(@PathVariable UUID salesRepresentativeId) {
         return customerService.findBySalesRepresentative(salesRepresentativeId);
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAnyRole('OWNER', 'SALES_REPRESENTATIVE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'SALES_REPRESENTATIVE')")
     public CustomerDto create(@Valid @RequestBody CustomerRequest request) {
         return customerService.create(request);
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('OWNER', 'SALES_REPRESENTATIVE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'SALES_REPRESENTATIVE')")
     public CustomerDto update(@PathVariable UUID id, @Valid @RequestBody CustomerRequest request) {
         return customerService.update(id, request);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('OWNER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER')")
     public void deactivate(@PathVariable UUID id) {
         customerService.deactivate(id);
     }

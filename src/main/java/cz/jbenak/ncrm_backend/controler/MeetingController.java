@@ -5,6 +5,8 @@ import cz.jbenak.ncrm_backend.model.dto.customer.MeetingRequest;
 import cz.jbenak.ncrm_backend.services.MeetingService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -22,7 +24,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/meetings")
 @RequiredArgsConstructor
-@PreAuthorize("hasAnyRole('OWNER', 'SALES_REPRESENTATIVE')")
+@PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'SALES_REPRESENTATIVE')")
 public class MeetingController {
 
     private final MeetingService meetingService;
@@ -30,6 +32,17 @@ public class MeetingController {
     @GetMapping
     public List<MeetingDto> findAll() {
         return meetingService.findAll();
+    }
+
+    /**
+     * Generic search endpoint. Accepts repeatable {@code filter} query parameters in the form
+     * {@code field:operator:value} (operators: contains, notContains, eq, neq, lt, gt, between;
+     * for between the value is {@code lower,upper}). All filters are combined with AND.
+     * Example: {@code /api/meetings/search?filter=subject:contains:demo&filter=status:eq:PLANNED}
+     */
+    @GetMapping("/search")
+    public Page<MeetingDto> search(@RequestParam(required = false) List<String> filter, Pageable pageable) {
+        return meetingService.search(filter, pageable);
     }
 
     @GetMapping("/{id}")

@@ -28,19 +28,19 @@ public class ReportController {
     private final ReportService reportService;
 
     @GetMapping("/owner/sales-overview")
-    @PreAuthorize("hasRole('OWNER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER')")
     public ResponseEntity<byte[]> ownerSalesReport() {
         return pdf("sales-overview.pdf", reportService.ownerSalesReport());
     }
 
     @GetMapping("/representative/performance")
-    @PreAuthorize("hasAnyRole('OWNER', 'SALES_REPRESENTATIVE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'SALES_REPRESENTATIVE')")
     public ResponseEntity<byte[]> salesRepresentativePerformanceReport() {
         return pdf("performance.pdf", reportService.salesRepresentativePerformanceReport());
     }
 
     @GetMapping("/customer/{customerId}/orders")
-    @PreAuthorize("hasAnyRole('OWNER', 'SALES_REPRESENTATIVE', 'CUSTOMER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'SALES_REPRESENTATIVE', 'CUSTOMER')")
     public ResponseEntity<byte[]> customerOrdersReport(@PathVariable UUID customerId) {
         return pdf("orders.pdf", reportService.customerOrdersReport(customerId));
     }

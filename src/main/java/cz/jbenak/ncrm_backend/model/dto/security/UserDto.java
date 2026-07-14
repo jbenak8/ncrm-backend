@@ -18,6 +18,8 @@ public record UserDto(
         String lastName,
         boolean enabled,
         boolean locked,
+        boolean credentialsExpired,
+        boolean mustChangePassword,
         LocalDateTime lastLoginAt,
         Set<String> roles
 ) {

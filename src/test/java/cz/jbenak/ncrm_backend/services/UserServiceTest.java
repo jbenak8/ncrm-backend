@@ -1,5 +1,6 @@
 package cz.jbenak.ncrm_backend.services;
 
+import cz.jbenak.ncrm_backend.model.dto.security.ChangePasswordRequest;
 import cz.jbenak.ncrm_backend.model.dto.security.UserDto;
 import cz.jbenak.ncrm_backend.model.dto.security.UserRequest;
 import cz.jbenak.ncrm_backend.model.entity.company.SalesRepresentativeEntity;
@@ -15,6 +16,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
@@ -47,6 +49,8 @@ class UserServiceTest {
     private UserMapper userMapper;
     @Mock
     private PasswordEncoder passwordEncoder;
+    @Mock
+    private JavaMailSender mailSender;
 
     @InjectMocks
     private UserService userService;
@@ -134,7 +138,8 @@ class UserServiceTest {
     }
 
     private UserRequest userRequest(String password) {
-        return new UserRequest("john", "john@example.com", password, "John", "Doe", true, false, Set.of("OWNER"));
+        return new UserRequest("john", "john@example.com", password, "John", "Doe", true, false, false, false,
+                Set.of("OWNER"));
     }
 
     @Test
@@ -142,13 +147,13 @@ class UserServiceTest {
         when(userRepository.existsByUsername("john")).thenReturn(false);
         when(userRepository.existsByEmail("john@example.com")).thenReturn(false);
         when(userMapper.toEntity(any(UserRequest.class))).thenReturn(new UserEntity());
-        when(passwordEncoder.encode("secret-password")).thenReturn("hash");
+        when(passwordEncoder.encode("Secret.Password1")).thenReturn("hash");
         RoleEntity role = new RoleEntity();
         role.setName("OWNER");
         when(roleRepository.findByName("OWNER")).thenReturn(Optional.of(role));
         when(userRepository.save(any(UserEntity.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        userService.create(userRequest("secret-password"));
+        userService.create(userRequest("Secret.Password1"));
 
         ArgumentCaptor<UserEntity> captor = ArgumentCaptor.forClass(UserEntity.class);
         verify(userRepository).save(captor.capture());
@@ -160,7 +165,7 @@ class UserServiceTest {
     void createRejectsDuplicateUsername() {
         when(userRepository.existsByUsername("john")).thenReturn(true);
 
-        assertThatThrownBy(() -> userService.create(userRequest("secret-password")))
+        assertThatThrownBy(() -> userService.create(userRequest("Secret.Password1")))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("john");
     }
@@ -245,5 +250,60 @@ class UserServiceTest {
 
         assertThatThrownBy(() -> userService.setLocked(id, true))
                 .isInstanceOf(NotFoundException.class);
+    }
+
+    @Test
+    void createRejectsPasswordViolatingPolicy() {
+        when(userRepository.existsByUsername("john")).thenReturn(false);
+        when(userRepository.existsByEmail("john@example.com")).thenReturn(false);
+
+        assertThatThrownBy(() -> userService.create(userRequest("weakpassword")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Password");
+    }
+
+    @Test
+    void changePasswordEncodesNewPasswordAndClearsFlags() {
+        UserEntity user = new UserEntity();
+        user.setUsername("john");
+        user.setPasswordHash("old-hash");
+        user.setMustChangePassword(true);
+        user.setCredentialsExpired(true);
+        when(userRepository.findByUsername("john")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("Old.Password1", "old-hash")).thenReturn(true);
+        when(passwordEncoder.encode("New.Password1")).thenReturn("new-hash");
+        when(userRepository.save(user)).thenReturn(user);
+
+        userService.changePassword("john", new ChangePasswordRequest("Old.Password1", "New.Password1"));
+
+        assertThat(user.getPasswordHash()).isEqualTo("new-hash");
+        assertThat(user.isMustChangePassword()).isFalse();
+        assertThat(user.isCredentialsExpired()).isFalse();
+    }
+
+    @Test
+    void changePasswordRejectsWrongCurrentPassword() {
+        UserEntity user = new UserEntity();
+        user.setPasswordHash("old-hash");
+        when(userRepository.findByUsername("john")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("Wrong.Password1", "old-hash")).thenReturn(false);
+
+        assertThatThrownBy(() ->
+                userService.changePassword("john", new ChangePasswordRequest("Wrong.Password1", "New.Password1")))
+                .isInstanceOf(IllegalArgumentException.class);
+        verify(userRepository, never()).save(user);
+    }
+
+    @Test
+    void changePasswordRejectsNewPasswordViolatingPolicy() {
+        UserEntity user = new UserEntity();
+        user.setPasswordHash("old-hash");
+        when(userRepository.findByUsername("john")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("Old.Password1", "old-hash")).thenReturn(true);
+
+        assertThatThrownBy(() ->
+                userService.changePassword("john", new ChangePasswordRequest("Old.Password1", "weakpassword")))
+                .isInstanceOf(IllegalArgumentException.class);
+        verify(userRepository, never()).save(user);
     }
 }

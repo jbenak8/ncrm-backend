@@ -40,20 +40,20 @@ public class VatRateController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('OWNER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER')")
     public VatRateDto create(@Valid @RequestBody VatRateRequest request) {
         return vatRateService.create(request);
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('OWNER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER')")
     public VatRateDto update(@PathVariable UUID id, @Valid @RequestBody VatRateRequest request) {
         return vatRateService.update(id, request);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('OWNER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER')")
     public void delete(@PathVariable UUID id) {
         vatRateService.delete(id);
     }

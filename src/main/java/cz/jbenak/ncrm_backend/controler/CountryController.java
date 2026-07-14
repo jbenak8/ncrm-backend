@@ -38,19 +38,19 @@ public class CountryController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('OWNER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER')")
     public CountryDto create(@Valid @RequestBody CountryDto request) {
         return countryService.create(request);
     }
 
     @PutMapping("/{isoCode}")
-    @PreAuthorize("hasRole('OWNER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER')")
     public CountryDto update(@PathVariable String isoCode, @Valid @RequestBody CountryDto request) {
         return countryService.update(isoCode, request);
     }
 
     @PostMapping("/{isoCode}/active/{active}")
-    @PreAuthorize("hasRole('OWNER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER')")
     public CountryDto setActive(@PathVariable String isoCode, @PathVariable boolean active) {
         return countryService.setActive(isoCode, active);
     }

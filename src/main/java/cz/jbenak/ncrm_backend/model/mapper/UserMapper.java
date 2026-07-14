@@ -3,6 +3,7 @@ package cz.jbenak.ncrm_backend.model.mapper;
 import cz.jbenak.ncrm_backend.configuration.MapstructConfig;
 import cz.jbenak.ncrm_backend.model.dto.company.SalesRepresentativeDto;
 import cz.jbenak.ncrm_backend.model.dto.company.SalesRepresentativeRequest;
+import cz.jbenak.ncrm_backend.model.dto.security.RoleDto;
 import cz.jbenak.ncrm_backend.model.dto.security.UserDto;
 import cz.jbenak.ncrm_backend.model.dto.security.UserRequest;
 import cz.jbenak.ncrm_backend.model.entity.company.SalesRepresentativeEntity;
@@ -28,6 +29,10 @@ public interface UserMapper {
     UserDto toDto(UserEntity entity);
 
     List<UserDto> toDtoList(List<UserEntity> entities);
+
+    RoleDto toRoleDto(RoleEntity entity);
+
+    List<RoleDto> toRoleDtoList(List<RoleEntity> entities);
 
     @Mapping(target = "userId", source = "user.id")
     @Mapping(target = "firstName", source = "user.firstName")

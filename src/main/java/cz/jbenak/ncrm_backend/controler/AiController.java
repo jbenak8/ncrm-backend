@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/ai")
 @RequiredArgsConstructor
-@PreAuthorize("hasAnyRole('OWNER', 'SALES_REPRESENTATIVE')")
+@PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'SALES_REPRESENTATIVE')")
 public class AiController {
 
     private final AiService aiService;

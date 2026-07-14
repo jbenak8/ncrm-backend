@@ -6,6 +6,8 @@ import cz.jbenak.ncrm_backend.model.dto.marketing.CampaignRequest;
 import cz.jbenak.ncrm_backend.services.CampaignService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -25,7 +27,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/campaigns")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('OWNER')")
+@PreAuthorize("hasAnyRole('ADMIN', 'OWNER')")
 public class CampaignController {
 
     private final CampaignService campaignService;
@@ -33,6 +35,17 @@ public class CampaignController {
     @GetMapping
     public List<CampaignDto> findAll() {
         return campaignService.findAll();
+    }
+
+    /**
+     * Generic search endpoint. Accepts repeatable {@code filter} query parameters in the form
+     * {@code field:operator:value} (operators: contains, notContains, eq, neq, lt, gt, between;
+     * for between the value is {@code lower,upper}). All filters are combined with AND.
+     * Example: {@code /api/campaigns/search?filter=name:contains:akce&filter=status:eq:SENT}
+     */
+    @GetMapping("/search")
+    public Page<CampaignDto> search(@RequestParam(required = false) List<String> filter, Pageable pageable) {
+        return campaignService.search(filter, pageable);
     }
 
     @GetMapping("/{id}")

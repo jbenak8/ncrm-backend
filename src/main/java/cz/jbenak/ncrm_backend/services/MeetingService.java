@@ -9,14 +9,18 @@ import cz.jbenak.ncrm_backend.repository.CustomerRepository;
 import cz.jbenak.ncrm_backend.repository.CustomerSiteRepository;
 import cz.jbenak.ncrm_backend.repository.MeetingRepository;
 import cz.jbenak.ncrm_backend.repository.SalesRepresentativeRepository;
+import cz.jbenak.ncrm_backend.search.SearchSpecificationBuilder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -31,6 +35,11 @@ import java.util.UUID;
 @Transactional
 public class MeetingService {
 
+    /** Attribute paths of the meeting entity that can be used by the generic search API. */
+    private static final Set<String> SEARCHABLE_FIELDS = Set.of(
+            "subject", "description", "plannedDate", "actualDate", "status", "outcome",
+            "customer.id", "customer.name", "salesRepresentative.id", "salesRepresentative.code");
+
     private final MeetingRepository meetingRepository;
     private final CustomerRepository customerRepository;
     private final ContactPersonRepository contactPersonRepository;
@@ -41,6 +50,17 @@ public class MeetingService {
     @Transactional(readOnly = true)
     public List<MeetingDto> findAll() {
         return meetingMapper.toDtoList(meetingRepository.findAll());
+    }
+
+    /**
+     * Generic search over meetings. Filters are raw {@code field:operator:value} expressions,
+     * combined with a logical AND; see {@link SearchSpecificationBuilder}.
+     */
+    @Transactional(readOnly = true)
+    public Page<MeetingDto> search(List<String> filters, Pageable pageable) {
+        log.debug("Searching meetings with filters {}", filters);
+        return meetingRepository.findAll(SearchSpecificationBuilder.build(filters, SEARCHABLE_FIELDS), pageable)
+                .map(meetingMapper::toDto);
     }
 
     @Transactional(readOnly = true)

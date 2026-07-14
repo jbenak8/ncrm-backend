@@ -20,7 +20,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/dashboard")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('OWNER')")
+@PreAuthorize("hasAnyRole('ADMIN', 'OWNER')")
 public class DashboardController {
 
     private final DashboardService dashboardService;
@@ -41,7 +41,7 @@ public class DashboardController {
     }
 
     @GetMapping("/sales-by-representative")
-    @PreAuthorize("hasAnyRole('OWNER', 'SALES_REPRESENTATIVE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'SALES_REPRESENTATIVE')")
     public List<DashboardDtos.SalesByRepresentative> salesByRepresentative() {
         return dashboardService.salesByRepresentative();
     }

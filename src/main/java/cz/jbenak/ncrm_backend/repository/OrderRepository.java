@@ -2,6 +2,7 @@ package cz.jbenak.ncrm_backend.repository;
 
 import cz.jbenak.ncrm_backend.model.entity.order.OrderEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -12,13 +13,13 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * @author Jan Benák
+ * @author Jan BenĂˇk
  * @version 1.0
  * @since 2026-07-11
  * Repository for customer orders including aggregation queries used by the owner dashboards and reports.
  */
 @Repository
-public interface OrderRepository extends JpaRepository<OrderEntity, UUID> {
+public interface OrderRepository extends JpaRepository<OrderEntity, UUID>, JpaSpecificationExecutor<OrderEntity> {
 
     Optional<OrderEntity> findByOrderNumber(String orderNumber);
 

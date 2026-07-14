@@ -12,7 +12,8 @@ import java.util.UUID;
  * @version 1.0
  * @since 2026-07-10
  * Represents a security role used for role-based access control (RBAC).
- * Role names should follow the Spring Security convention, e.g. "ROLE_ADMIN", "ROLE_SALES_REPRESENTATIVE", "ROLE_USER".
+ * Role names are stored without the "ROLE_" prefix, e.g. "ADMIN", "SALES_REPRESENTATIVE", "CUSTOMER".
+ * The "ROLE_" prefix is added by Spring Security only when granted authorities are created from JWT claims.
  */
 
 @Getter

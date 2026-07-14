@@ -31,51 +31,51 @@ public class CompanyController {
     private final CompanyService companyService;
 
     @GetMapping
-    @PreAuthorize("hasRole('OWNER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER')")
     public List<CompanyDto> findAll() {
         return companyService.findAll();
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('OWNER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER')")
     public CompanyDto findById(@PathVariable UUID id) {
         return companyService.findById(id);
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('OWNER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER')")
     public CompanyDto create(@Valid @RequestBody CompanyRequest request) {
         return companyService.create(request);
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('OWNER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER')")
     public CompanyDto update(@PathVariable UUID id, @Valid @RequestBody CompanyRequest request) {
         return companyService.update(id, request);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('OWNER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER')")
     public void delete(@PathVariable UUID id, Authentication authentication) {
         companyService.delete(id, authentication.getName());
     }
 
     @PostMapping("/{id}/default")
-    @PreAuthorize("hasRole('OWNER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER')")
     public CompanyDto setDefault(@PathVariable UUID id) {
         return companyService.setDefault(id);
     }
 
     @PutMapping(value = "/{id}/logo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasRole('OWNER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER')")
     public CompanyDto uploadLogo(@PathVariable UUID id, @RequestParam("file") MultipartFile file) {
         return companyService.uploadLogo(id, file);
     }
 
     @GetMapping("/{id}/logo")
-    @PreAuthorize("hasRole('OWNER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER')")
     public ResponseEntity<byte[]> getLogo(@PathVariable UUID id) {
         CompanyLogoDto logo = companyService.getLogo(id);
         return ResponseEntity.ok()
@@ -85,7 +85,7 @@ public class CompanyController {
 
     @DeleteMapping("/{id}/logo")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('OWNER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER')")
     public void deleteLogo(@PathVariable UUID id) {
         companyService.deleteLogo(id);
     }

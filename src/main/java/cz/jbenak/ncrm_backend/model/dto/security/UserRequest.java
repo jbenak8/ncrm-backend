@@ -21,6 +21,8 @@ public record UserRequest(
         @NotBlank @Size(max = 100) String lastName,
         boolean enabled,
         boolean locked,
+        boolean mustChangePassword,
+        boolean sendCredentials,
         Set<String> roles
 ) {
 }

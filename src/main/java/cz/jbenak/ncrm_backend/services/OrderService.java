@@ -11,8 +11,11 @@ import cz.jbenak.ncrm_backend.repository.CustomerRepository;
 import cz.jbenak.ncrm_backend.repository.ItemRepository;
 import cz.jbenak.ncrm_backend.repository.OrderRepository;
 import cz.jbenak.ncrm_backend.repository.SalesRepresentativeRepository;
+import cz.jbenak.ncrm_backend.search.SearchSpecificationBuilder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +24,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -36,6 +40,11 @@ import java.util.UUID;
 @Transactional
 public class OrderService {
 
+    /** Attribute paths of the order entity that can be used by the generic search API. */
+    private static final Set<String> SEARCHABLE_FIELDS = Set.of(
+            "orderNumber", "orderDate", "status", "totalPrice", "currency", "note",
+            "customer.id", "customer.name", "salesRepresentative.id", "salesRepresentative.code");
+
     private final OrderRepository orderRepository;
     private final CustomerRepository customerRepository;
     private final ContactPersonRepository contactPersonRepository;
@@ -46,6 +55,17 @@ public class OrderService {
     @Transactional(readOnly = true)
     public List<OrderDto> findAll() {
         return orderMapper.toDtoList(orderRepository.findAll());
+    }
+
+    /**
+     * Generic search over orders. Filters are raw {@code field:operator:value} expressions,
+     * combined with a logical AND; see {@link SearchSpecificationBuilder}.
+     */
+    @Transactional(readOnly = true)
+    public Page<OrderDto> search(List<String> filters, Pageable pageable) {
+        log.debug("Searching orders with filters {}", filters);
+        return orderRepository.findAll(SearchSpecificationBuilder.build(filters, SEARCHABLE_FIELDS), pageable)
+                .map(orderMapper::toDto);
     }
 
     @Transactional(readOnly = true)

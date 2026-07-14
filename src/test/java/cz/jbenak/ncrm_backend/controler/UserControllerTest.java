@@ -39,6 +39,8 @@ class UserControllerTest {
               "lastName": "Doe",
               "enabled": true,
               "locked": false,
+              "mustChangePassword": false,
+              "sendCredentials": false,
               "roles": ["SALES_REPRESENTATIVE"]
             }
             """;

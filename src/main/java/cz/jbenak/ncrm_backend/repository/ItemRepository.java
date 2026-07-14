@@ -2,6 +2,7 @@ package cz.jbenak.ncrm_backend.repository;
 
 import cz.jbenak.ncrm_backend.model.entity.store.ItemEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -15,7 +16,7 @@ import java.util.UUID;
  * Repository for items (goods and services).
  */
 @Repository
-public interface ItemRepository extends JpaRepository<ItemEntity, UUID> {
+public interface ItemRepository extends JpaRepository<ItemEntity, UUID>, JpaSpecificationExecutor<ItemEntity> {
 
     Optional<ItemEntity> findByCode(String code);
 

@@ -28,32 +28,32 @@ public class SalesRepresentativeController {
     private final SalesRepresentativeService salesRepresentativeService;
 
     @GetMapping
-    @PreAuthorize("hasRole('OWNER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER')")
     public List<SalesRepresentativeDto> findAll() {
         return salesRepresentativeService.findAll();
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('OWNER', 'SALES_REPRESENTATIVE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'SALES_REPRESENTATIVE')")
     public SalesRepresentativeDto findById(@PathVariable UUID id) {
         return salesRepresentativeService.findById(id);
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('OWNER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER')")
     public SalesRepresentativeDto create(@Valid @RequestBody SalesRepresentativeRequest request) {
         return salesRepresentativeService.create(request);
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('OWNER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER')")
     public SalesRepresentativeDto update(@PathVariable UUID id, @Valid @RequestBody SalesRepresentativeRequest request) {
         return salesRepresentativeService.update(id, request);
     }
 
     @PostMapping("/{id}/active/{active}")
-    @PreAuthorize("hasRole('OWNER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER')")
     public SalesRepresentativeDto setActive(@PathVariable UUID id, @PathVariable boolean active) {
         return salesRepresentativeService.setActive(id, active);
     }

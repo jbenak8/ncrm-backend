@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/ares")
 @RequiredArgsConstructor
-@PreAuthorize("hasAnyRole('OWNER', 'SALES_REPRESENTATIVE')")
+@PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'SALES_REPRESENTATIVE')")
 public class AresController {
 
     private final AresService aresService;

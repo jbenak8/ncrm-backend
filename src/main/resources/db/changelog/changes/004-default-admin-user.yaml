@@ -22,4 +22,4 @@ databaseChangeLog:
             tableName: user_roles
             columns:
               - column: { name: user_id, value: 6f1f9a67-2f4e-4d0c-9c1a-4b8e1a0d7c11 }
-              - column: { name: role_id, valueComputed: (SELECT id FROM roles WHERE name = 'ROLE_ADMIN') }
+              - column: { name: role_id, valueComputed: (SELECT id FROM roles WHERE name = 'ADMIN') }

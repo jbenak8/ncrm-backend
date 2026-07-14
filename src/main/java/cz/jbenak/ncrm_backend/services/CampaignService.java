@@ -11,9 +11,12 @@ import cz.jbenak.ncrm_backend.model.mapper.CampaignMapper;
 import cz.jbenak.ncrm_backend.repository.CampaignRepository;
 import cz.jbenak.ncrm_backend.repository.CustomerRepository;
 import cz.jbenak.ncrm_backend.repository.UserRepository;
+import cz.jbenak.ncrm_backend.search.SearchSpecificationBuilder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.document.Document;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.ai.reader.pdf.PagePdfDocumentReader;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -27,6 +30,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -44,6 +48,10 @@ import java.util.stream.Collectors;
 @Transactional
 public class CampaignService {
 
+    /** Attribute paths of the campaign entity that can be used by the generic search API. */
+    private static final Set<String> SEARCHABLE_FIELDS = Set.of(
+            "name", "subject", "contentSource", "status", "scheduledAt", "sentAt", "createdBy.username");
+
     private final CampaignRepository campaignRepository;
     private final CustomerRepository customerRepository;
     private final UserRepository userRepository;
@@ -54,6 +62,17 @@ public class CampaignService {
     @Transactional(readOnly = true)
     public List<CampaignDto> findAll() {
         return campaignMapper.toDtoList(campaignRepository.findAll());
+    }
+
+    /**
+     * Generic search over campaigns. Filters are raw {@code field:operator:value} expressions,
+     * combined with a logical AND; see {@link SearchSpecificationBuilder}.
+     */
+    @Transactional(readOnly = true)
+    public Page<CampaignDto> search(List<String> filters, Pageable pageable) {
+        log.debug("Searching campaigns with filters {}", filters);
+        return campaignRepository.findAll(SearchSpecificationBuilder.build(filters, SEARCHABLE_FIELDS), pageable)
+                .map(campaignMapper::toDto);
     }
 
     @Transactional(readOnly = true)

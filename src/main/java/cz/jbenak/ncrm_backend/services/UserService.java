@@ -1,6 +1,8 @@
 package cz.jbenak.ncrm_backend.services;
 
 import cz.jbenak.ncrm_backend.model.dto.company.SalesRepresentativeDto;
+import cz.jbenak.ncrm_backend.model.dto.security.ChangePasswordRequest;
+import cz.jbenak.ncrm_backend.model.dto.security.RoleDto;
 import cz.jbenak.ncrm_backend.model.dto.security.UserDto;
 import cz.jbenak.ncrm_backend.model.dto.security.UserRequest;
 import cz.jbenak.ncrm_backend.model.entity.security.RoleEntity;
@@ -9,8 +11,14 @@ import cz.jbenak.ncrm_backend.model.mapper.UserMapper;
 import cz.jbenak.ncrm_backend.repository.RoleRepository;
 import cz.jbenak.ncrm_backend.repository.SalesRepresentativeRepository;
 import cz.jbenak.ncrm_backend.repository.UserRepository;
+import cz.jbenak.ncrm_backend.search.SearchSpecificationBuilder;
+import cz.jbenak.ncrm_backend.security.PasswordPolicy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,15 +44,38 @@ import java.util.stream.Collectors;
 @Transactional
 public class UserService {
 
+    /** Attribute paths of the user entity that can be used by the generic search API. */
+    private static final Set<String> SEARCHABLE_FIELDS = Set.of(
+            "username", "email", "firstName", "lastName", "enabled", "locked",
+            "credentialsExpired", "mustChangePassword", "lastLoginAt");
+
     private final UserRepository userRepository;
     private final SalesRepresentativeRepository salesRepresentativeRepository;
     private final RoleRepository roleRepository;
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
+    private final JavaMailSender mailSender;
 
     @Transactional(readOnly = true)
     public List<UserDto> findAll() {
         return userMapper.toDtoList(userRepository.findAll());
+    }
+
+    /**
+     * Generic search over user accounts. Filters are raw {@code field:operator:value} expressions,
+     * combined with a logical AND; see {@link SearchSpecificationBuilder}.
+     */
+    @Transactional(readOnly = true)
+    public Page<UserDto> search(List<String> filters, Pageable pageable) {
+        log.debug("Searching users with filters {}", filters);
+        return userRepository.findAll(SearchSpecificationBuilder.build(filters, SEARCHABLE_FIELDS), pageable)
+                .map(userMapper::toDto);
+    }
+
+    /** Returns all security roles assignable to user accounts. */
+    @Transactional(readOnly = true)
+    public List<RoleDto> findAllRoles() {
+        return userMapper.toRoleDtoList(roleRepository.findAll());
     }
 
     @Transactional(readOnly = true)
@@ -76,11 +107,15 @@ public class UserService {
         if (request.password() == null || request.password().isBlank()) {
             throw new IllegalStateException("Password is mandatory when creating a user");
         }
+        PasswordPolicy.validate(request.password());
         UserEntity entity = userMapper.toEntity(request);
         entity.setPasswordHash(passwordEncoder.encode(request.password()));
         entity.setRoles(resolveRoles(request.roles()));
         UserEntity saved = userRepository.save(entity);
         log.info("Created user {} with id {}", request.username(), saved.getId());
+        if (request.sendCredentials()) {
+            sendInitialCredentials(saved, request.password());
+        }
         return userMapper.toDto(saved);
     }
 
@@ -98,6 +133,7 @@ public class UserService {
                 });
         userMapper.updateEntity(request, entity);
         if (request.password() != null && !request.password().isBlank()) {
+            PasswordPolicy.validate(request.password());
             entity.setPasswordHash(passwordEncoder.encode(request.password()));
         }
         entity.setRoles(resolveRoles(request.roles()));
@@ -127,6 +163,47 @@ public class UserService {
         user.setEnabled(enabled);
         log.info("User {} ({}) is now {}", id, user.getUsername(), enabled ? "enabled" : "disabled");
         return userMapper.toDto(userRepository.save(user));
+    }
+
+    /**
+     * Changes the password of the given (authenticated) user. The current password must match,
+     * the new one must satisfy the password policy. Clears the "must change password" and
+     * "credentials expired" flags on success.
+     */
+    public UserDto changePassword(String username, ChangePasswordRequest request) {
+        UserEntity user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new NotFoundException("User " + username + " not found"));
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
+            throw new IllegalArgumentException("Current password is not valid");
+        }
+        PasswordPolicy.validate(request.newPassword());
+        user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
+        user.setMustChangePassword(false);
+        user.setCredentialsExpired(false);
+        log.info("User {} changed their password", username);
+        return userMapper.toDto(userRepository.save(user));
+    }
+
+    /** Sends the initial login credentials to the newly created user by e-mail. */
+    private void sendInitialCredentials(UserEntity user, String rawPassword) {
+        try {
+            var message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, "UTF-8");
+            helper.setTo(user.getEmail());
+            helper.setSubject("nCRM – přihlašovací údaje");
+            helper.setText("""
+                    <p>Dobrý den, %s %s,</p>
+                    <p>byl Vám vytvořen účet v systému nCRM. Vaše přihlašovací údaje jsou:</p>
+                    <ul><li>Uživatelské jméno: <strong>%s</strong></li>
+                    <li>Heslo: <strong>%s</strong></li></ul>
+                    <p>Po prvním přihlášení budete vyzváni ke změně hesla.</p>
+                    """.formatted(user.getFirstName(), user.getLastName(), user.getUsername(), rawPassword), true);
+            mailSender.send(message);
+            log.info("Initial credentials sent to {}", user.getEmail());
+        } catch (Exception e) {
+            log.error("Failed to send initial credentials to {}", user.getEmail(), e);
+            throw new IllegalStateException("User was created but the credentials e-mail could not be sent", e);
+        }
     }
 
     private UserEntity getUser(UUID id) {

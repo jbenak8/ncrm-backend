@@ -9,6 +9,7 @@ import cz.jbenak.ncrm_backend.model.mapper.CustomerMapper;
 import cz.jbenak.ncrm_backend.repository.CountryRepository;
 import cz.jbenak.ncrm_backend.repository.CustomerRepository;
 import cz.jbenak.ncrm_backend.repository.SalesRepresentativeRepository;
+import cz.jbenak.ncrm_backend.search.SearchSpecificationBuilder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -32,6 +34,11 @@ import java.util.UUID;
 @Transactional
 public class CustomerService {
 
+    /** Attribute paths of {@link CustomerEntity} that can be used by the generic search API. */
+    private static final Set<String> SEARCHABLE_FIELDS = Set.of(
+            "designation", "name", "registrationId", "vatId", "email", "phone", "active", "note",
+            "headquartersAddress.city", "headquartersAddress.zipCode", "salesRepresentative.id");
+
     private final CustomerRepository customerRepository;
     private final SalesRepresentativeRepository salesRepresentativeRepository;
     private final CountryRepository countryRepository;
@@ -44,6 +51,17 @@ public class CustomerService {
                 ? customerRepository.findAll(pageable)
                 : customerRepository.findAllByNameContainingIgnoreCase(name, pageable);
         return page.map(customerMapper::toDto);
+    }
+
+    /**
+     * Generic search over customers. Filters are raw {@code field:operator:value} expressions,
+     * combined with a logical AND; see {@link SearchSpecificationBuilder}.
+     */
+    @Transactional(readOnly = true)
+    public Page<CustomerDto> search(List<String> filters, Pageable pageable) {
+        log.debug("Searching customers with filters {}", filters);
+        return customerRepository.findAll(SearchSpecificationBuilder.build(filters, SEARCHABLE_FIELDS), pageable)
+                .map(customerMapper::toDto);
     }
 
     @Transactional(readOnly = true)
