@@ -39,7 +39,8 @@ public class DashboardService {
 
     public DashboardDtos.OwnerDashboard ownerDashboard() {
         log.debug("Building the owner dashboard payload");
-        return new DashboardDtos.OwnerDashboard(summary(), ordersByMonth(), salesByRepresentative(), topCustomers(10));
+        return new DashboardDtos.OwnerDashboard(summary(), ordersByMonth(), salesByRepresentative(), topCustomers(10),
+                activeCampaigns());
     }
 
     public DashboardDtos.DashboardSummary summary() {
@@ -71,6 +72,19 @@ public class DashboardService {
                     return new DashboardDtos.SalesByRepresentative(repId, name, (Long) row[1], (BigDecimal) row[2],
                             meetingRepository.countBySalesRepresentativeId(repId));
                 })
+                .toList();
+    }
+
+    /**
+     * Campaigns that are being prepared or are waiting to be sent (draft, scheduled or sending).
+     */
+    public List<DashboardDtos.ActiveCampaign> activeCampaigns() {
+        return campaignRepository.findAllByStatusInOrderByScheduledAtAscNameAsc(List.of(
+                        CampaignEntity.CampaignStatus.DRAFT,
+                        CampaignEntity.CampaignStatus.SCHEDULED,
+                        CampaignEntity.CampaignStatus.SENDING)).stream()
+                .map(c -> new DashboardDtos.ActiveCampaign(c.getId(), c.getName(), c.getSubject(),
+                        c.getStatus().name(), c.getScheduledAt(), c.getRecipients().size()))
                 .toList();
     }
 

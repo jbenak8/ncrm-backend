@@ -27,18 +27,18 @@ public class CustomerEntity extends AuditableEntity {
     @Column(name = "id")
     private UUID id;
 
-    @NaturalId
+    @NaturalId(mutable = true)
     @Column(name = "designation")
     private String designation;
 
     @Column(name = "name")
     private String name;
 
-    @NaturalId
+    @NaturalId(mutable = true)
     @Column(name = "registration_id", unique = true, nullable = false)
     private String registrationId;
 
-    @NaturalId
+    @NaturalId(mutable = true)
     @Column(name = "vat_id", unique = true)
     private String vatId;
 

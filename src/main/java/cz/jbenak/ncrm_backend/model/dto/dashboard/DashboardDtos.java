@@ -1,6 +1,7 @@
 package cz.jbenak.ncrm_backend.model.dto.dashboard;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -55,13 +56,27 @@ public final class DashboardDtos {
     }
 
     /**
+     * Active (draft, scheduled or currently sending) marketing campaign shown on the dashboard.
+     */
+    public record ActiveCampaign(
+            UUID id,
+            String name,
+            String subject,
+            String status,
+            LocalDateTime scheduledAt,
+            long recipientCount
+    ) {
+    }
+
+    /**
      * Composite payload with all dashboard widgets for a single frontend call.
      */
     public record OwnerDashboard(
             DashboardSummary summary,
             List<OrdersByMonth> ordersByMonth,
             List<SalesByRepresentative> salesByRepresentative,
-            List<TopCustomer> topCustomers
+            List<TopCustomer> topCustomers,
+            List<ActiveCampaign> activeCampaigns
     ) {
     }
 }
