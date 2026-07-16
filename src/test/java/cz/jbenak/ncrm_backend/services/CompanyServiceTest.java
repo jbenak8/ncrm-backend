@@ -74,7 +74,8 @@ class CompanyServiceTest {
     void createRejectsDuplicateRegistrationId() {
         when(companyRepository.existsByRegistrationId("12345678")).thenReturn(true);
 
-        assertThatThrownBy(() -> companyService.create(request(null, false)))
+        CompanyRequest request = request(null, false);
+        assertThatThrownBy(() -> companyService.create(request))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("12345678");
     }
@@ -145,27 +146,30 @@ class CompanyServiceTest {
 
     @Test
     void uploadLogoRejectsEmptyFile() {
+        UUID id = UUID.randomUUID();
         MockMultipartFile file = new MockMultipartFile("file", "logo.png", "image/png", new byte[0]);
 
-        assertThatThrownBy(() -> companyService.uploadLogo(UUID.randomUUID(), file))
+        assertThatThrownBy(() -> companyService.uploadLogo(id, file))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("empty");
     }
 
     @Test
     void uploadLogoRejectsUnsupportedContentType() {
+        UUID id = UUID.randomUUID();
         MockMultipartFile file = new MockMultipartFile("file", "logo.pdf", "application/pdf", new byte[]{1});
 
-        assertThatThrownBy(() -> companyService.uploadLogo(UUID.randomUUID(), file))
+        assertThatThrownBy(() -> companyService.uploadLogo(id, file))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("application/pdf");
     }
 
     @Test
     void uploadLogoRejectsOversizedFile() {
+        UUID id = UUID.randomUUID();
         MockMultipartFile file = new MockMultipartFile("file", "logo.png", "image/png", new byte[2 * 1024 * 1024 + 1]);
 
-        assertThatThrownBy(() -> companyService.uploadLogo(UUID.randomUUID(), file))
+        assertThatThrownBy(() -> companyService.uploadLogo(id, file))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("size");
     }

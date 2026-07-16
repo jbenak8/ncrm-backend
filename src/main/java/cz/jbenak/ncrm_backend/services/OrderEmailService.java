@@ -34,6 +34,7 @@ public class OrderEmailService {
             OrderEntity.OrderStatus.IN_PROGRESS, "V realizaci",
             OrderEntity.OrderStatus.COMPLETED, "Dokončená",
             OrderEntity.OrderStatus.CANCELLED, "Stornovaná");
+    public static final String TD_TD = "</td><td>";
 
     private final JavaMailSender mailSender;
 
@@ -100,9 +101,9 @@ public class OrderEmailService {
                 .append("<tr><th>Položka</th><th>Množství</th><th>Cena/ks</th><th>Celkem</th></tr>");
         for (OrderItemEntity item : order.getItems()) {
             html.append("<tr><td>").append(item.getItem() == null ? "" : item.getItem().getName())
-                    .append("</td><td>").append(item.getQuantity())
-                    .append("</td><td>").append(item.getUnitPrice())
-                    .append("</td><td>").append(item.getTotalPrice()).append("</td></tr>");
+                    .append(TD_TD).append(item.getQuantity())
+                    .append(TD_TD).append(item.getUnitPrice())
+                    .append(TD_TD).append(item.getTotalPrice()).append("</td></tr>");
         }
         html.append("</table>");
         html.append("<p>Celková cena: <strong>").append(order.getTotalPrice());

@@ -2,6 +2,7 @@ package cz.jbenak.ncrm_backend.services;
 
 import cz.jbenak.ncrm_backend.model.dto.order.OrderDto;
 import cz.jbenak.ncrm_backend.model.dto.order.OrderRequest;
+import cz.jbenak.ncrm_backend.model.entity.NumberSequenceEntity;
 import cz.jbenak.ncrm_backend.model.entity.order.OrderEntity;
 import cz.jbenak.ncrm_backend.model.entity.order.OrderItemEntity;
 import cz.jbenak.ncrm_backend.model.entity.store.ItemEntity;
@@ -53,6 +54,7 @@ public class OrderService {
     private final ItemRepository itemRepository;
     private final OrderMapper orderMapper;
     private final OrderEmailService orderEmailService;
+    private final NumberSequenceService numberSequenceService;
 
     @Transactional(readOnly = true)
     public List<OrderDto> findAll() {
@@ -179,8 +181,13 @@ public class OrderService {
         return orderRepository.findById(id).orElseThrow(() -> new NotFoundException("Order", id));
     }
 
+    /**
+     * Generates the order number from the configured {@code ORDER} number sequence. When no
+     * sequence is defined by the administrator, a legacy fallback number is generated instead.
+     */
     private String generateOrderNumber() {
-        return "ORD-" + LocalDate.now(ZoneId.systemDefault()).format(DateTimeFormatter.BASIC_ISO_DATE)
-                + "-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        return numberSequenceService.tryNextNumber(NumberSequenceEntity.SequenceType.ORDER)
+                .orElseGet(() -> "ORD-" + LocalDate.now(ZoneId.systemDefault()).format(DateTimeFormatter.BASIC_ISO_DATE)
+                        + "-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
     }
 }

@@ -18,6 +18,7 @@ import org.springframework.mail.javamail.JavaMailSender;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.Month;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -53,7 +54,7 @@ class OrderEmailServiceTest {
         ArgumentCaptor<MimeMessage> captor = ArgumentCaptor.forClass(MimeMessage.class);
         verify(mailSender).send(captor.capture());
         MimeMessage sent = captor.getValue();
-        assertThat(sent.getAllRecipients()[0].toString()).isEqualTo("contact@acme.cz");
+        assertThat(sent.getAllRecipients()[0]).hasToString("contact@acme.cz");
         assertThat(sent.getSubject()).contains("nová objednávka").contains("ORD-1");
         assertThat(sent.getContent().toString()).contains("Papír").contains("100.00").contains("CZK");
     }
@@ -68,7 +69,7 @@ class OrderEmailServiceTest {
 
         ArgumentCaptor<MimeMessage> captor = ArgumentCaptor.forClass(MimeMessage.class);
         verify(mailSender).send(captor.capture());
-        assertThat(captor.getValue().getAllRecipients()[0].toString()).isEqualTo("customer@acme.cz");
+        assertThat(captor.getValue().getAllRecipients()[0]).hasToString("customer@acme.cz");
     }
 
     @Test
@@ -122,7 +123,7 @@ class OrderEmailServiceTest {
         OrderEntity order = new OrderEntity();
         order.setOrderNumber("ORD-1");
         order.setCustomer(customer);
-        order.setOrderDate(LocalDate.of(2026, 7, 16));
+        order.setOrderDate(LocalDate.of(2026, Month.JULY, 16));
         order.setStatus(OrderEntity.OrderStatus.NEW);
         order.setCurrency("CZK");
         order.setTotalPrice(new BigDecimal("100.00"));

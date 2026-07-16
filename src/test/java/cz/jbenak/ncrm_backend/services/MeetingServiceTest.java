@@ -18,6 +18,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
+import java.time.Month;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -47,6 +48,8 @@ class MeetingServiceTest {
     private SalesRepresentativeRepository salesRepresentativeRepository;
     @Mock
     private MeetingMapper meetingMapper;
+    @Mock
+    private MeetingEmailService meetingEmailService;
 
     @InjectMocks
     private MeetingService meetingService;
@@ -56,7 +59,7 @@ class MeetingServiceTest {
 
     private MeetingRequest request(MeetingEntity.MeetingStatus status) {
         return new MeetingRequest(customerId, null, repId, null, "Introduction",
-                "First meeting", LocalDateTime.of(2026, 7, 20, 10, 0), null, status, null);
+                "First meeting", LocalDateTime.of(2026, Month.JULY, 20, 10, 0), null, status, null);
     }
 
     @Test
@@ -101,13 +104,15 @@ class MeetingServiceTest {
         verify(meetingRepository).save(captor.capture());
         assertThat(captor.getValue().getStatus()).isEqualTo(MeetingEntity.MeetingStatus.PLANNED);
         assertThat(captor.getValue().getSubject()).isEqualTo("Introduction");
+        verify(meetingEmailService).sendMeetingCreated(captor.getValue());
     }
 
     @Test
     void createThrowsWhenCustomerMissing() {
         when(customerRepository.findById(customerId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> meetingService.create(request(null)))
+        MeetingRequest request = request(null);
+        assertThatThrownBy(() -> meetingService.create(request))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessageContaining("Customer");
     }
@@ -124,6 +129,7 @@ class MeetingServiceTest {
         meetingService.update(id, request(MeetingEntity.MeetingStatus.COMPLETED));
 
         assertThat(entity.getStatus()).isEqualTo(MeetingEntity.MeetingStatus.COMPLETED);
+        verify(meetingEmailService).sendMeetingUpdated(entity);
     }
 
     @Test

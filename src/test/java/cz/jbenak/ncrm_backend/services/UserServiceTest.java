@@ -165,7 +165,8 @@ class UserServiceTest {
     void createRejectsDuplicateUsername() {
         when(userRepository.existsByUsername("john")).thenReturn(true);
 
-        assertThatThrownBy(() -> userService.create(userRequest("Secret.Password1")))
+        UserRequest request = userRequest("Secret.Password1");
+        assertThatThrownBy(() -> userService.create(request))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("john");
     }
@@ -175,7 +176,8 @@ class UserServiceTest {
         when(userRepository.existsByUsername("john")).thenReturn(false);
         when(userRepository.existsByEmail("john@example.com")).thenReturn(false);
 
-        assertThatThrownBy(() -> userService.create(userRequest(null)))
+        UserRequest request = userRequest(null);
+        assertThatThrownBy(() -> userService.create(request))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Password");
     }
@@ -210,7 +212,8 @@ class UserServiceTest {
         when(userRepository.findById(id)).thenReturn(Optional.of(entity));
         when(userRepository.findByUsername("john")).thenReturn(Optional.of(other));
 
-        assertThatThrownBy(() -> userService.update(id, userRequest(null)))
+        UserRequest request = userRequest(null);
+        assertThatThrownBy(() -> userService.update(id, request))
                 .isInstanceOf(IllegalStateException.class);
     }
 
@@ -257,7 +260,8 @@ class UserServiceTest {
         when(userRepository.existsByUsername("john")).thenReturn(false);
         when(userRepository.existsByEmail("john@example.com")).thenReturn(false);
 
-        assertThatThrownBy(() -> userService.create(userRequest("weakpassword")))
+        UserRequest request = userRequest("weakpassword");
+        assertThatThrownBy(() -> userService.create(request))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Password");
     }
@@ -288,8 +292,8 @@ class UserServiceTest {
         when(userRepository.findByUsername("john")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("Wrong.Password1", "old-hash")).thenReturn(false);
 
-        assertThatThrownBy(() ->
-                userService.changePassword("john", new ChangePasswordRequest("Wrong.Password1", "New.Password1")))
+        ChangePasswordRequest request = new ChangePasswordRequest("Wrong.Password1", "New.Password1");
+        assertThatThrownBy(() -> userService.changePassword("john", request))
                 .isInstanceOf(IllegalArgumentException.class);
         verify(userRepository, never()).save(user);
     }
@@ -301,8 +305,8 @@ class UserServiceTest {
         when(userRepository.findByUsername("john")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("Old.Password1", "old-hash")).thenReturn(true);
 
-        assertThatThrownBy(() ->
-                userService.changePassword("john", new ChangePasswordRequest("Old.Password1", "weakpassword")))
+        ChangePasswordRequest request = new ChangePasswordRequest("Old.Password1", "weakpassword");
+        assertThatThrownBy(() -> userService.changePassword("john", request))
                 .isInstanceOf(IllegalArgumentException.class);
         verify(userRepository, never()).save(user);
     }

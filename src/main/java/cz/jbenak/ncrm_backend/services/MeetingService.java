@@ -46,6 +46,7 @@ public class MeetingService {
     private final CustomerSiteRepository customerSiteRepository;
     private final SalesRepresentativeRepository salesRepresentativeRepository;
     private final MeetingMapper meetingMapper;
+    private final MeetingEmailService meetingEmailService;
 
     @Transactional(readOnly = true)
     public List<MeetingDto> findAll() {
@@ -85,13 +86,17 @@ public class MeetingService {
             entity.setStatus(MeetingEntity.MeetingStatus.PLANNED);
         }
         log.info("Planning meeting '{}' for customer {} on {}", request.subject(), request.customerId(), request.plannedDate());
-        return meetingMapper.toDto(meetingRepository.save(entity));
+        MeetingEntity saved = meetingRepository.save(entity);
+        meetingEmailService.sendMeetingCreated(saved);
+        return meetingMapper.toDto(saved);
     }
 
     public MeetingDto update(UUID id, MeetingRequest request) {
         MeetingEntity entity = getMeeting(id);
         applyRequest(entity, request);
-        return meetingMapper.toDto(meetingRepository.save(entity));
+        MeetingEntity saved = meetingRepository.save(entity);
+        meetingEmailService.sendMeetingUpdated(saved);
+        return meetingMapper.toDto(saved);
     }
 
     /**

@@ -102,7 +102,8 @@ class CustomerServiceTest {
     void createRejectsDuplicateRegistrationId() {
         when(customerRepository.existsByRegistrationId("12345678")).thenReturn(true);
 
-        assertThatThrownBy(() -> customerService.create(request(null, null)))
+        CustomerRequest request = request(null, null);
+        assertThatThrownBy(() -> customerService.create(request))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("already exists");
         verify(customerRepository, never()).save(any());
@@ -140,7 +141,8 @@ class CustomerServiceTest {
         when(customerMapper.toEntity(any(CustomerRequest.class))).thenReturn(new CustomerEntity());
         when(salesRepresentativeRepository.findById(repId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> customerService.create(request(repId, null)))
+        CustomerRequest request = request(repId, null);
+        assertThatThrownBy(() -> customerService.create(request))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessageContaining("SalesRepresentative");
     }

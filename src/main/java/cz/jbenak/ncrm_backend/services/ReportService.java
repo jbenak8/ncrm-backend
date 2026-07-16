@@ -1,5 +1,14 @@
 package cz.jbenak.ncrm_backend.services;
 
+import cz.jbenak.ncrm_backend.model.entity.AddressEntity;
+import cz.jbenak.ncrm_backend.model.entity.company.CompanyEntity;
+import cz.jbenak.ncrm_backend.model.entity.customer.CustomerEntity;
+import cz.jbenak.ncrm_backend.model.entity.invoice.InvoiceEntity;
+import cz.jbenak.ncrm_backend.model.entity.invoice.InvoiceItemEntity;
+import cz.jbenak.ncrm_backend.model.entity.order.OrderEntity;
+import cz.jbenak.ncrm_backend.repository.CompanyRepository;
+import cz.jbenak.ncrm_backend.repository.InvoiceRepository;
+import cz.jbenak.ncrm_backend.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.sf.jasperreports.engine.JasperCompileManager;
@@ -12,6 +21,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.InputStream;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,7 +36,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * Reporting service based on JasperReports. Provides PDF reports for all user roles:
  * - owner: overall sales overview (revenue by month),
  * - sales representative: personal performance (orders and meetings),
- * - customer: overview of their own orders.
+ * - customer: overview of their own orders,
+ * - anyone working with orders: a printable document of a single order (Czech order form layout),
+ * - invoicing: a printable invoice of an issued invoice (Czech VAT invoice layout with a payment QR code).
  * Compiled reports are cached to avoid repeated compilation of the JRXML templates.
  */
 @Slf4j
@@ -36,8 +49,22 @@ public class ReportService {
 
     private final DashboardService dashboardService;
     private final OrderService orderService;
+    private final OrderRepository orderRepository;
+    private final CompanyRepository companyRepository;
+    private final InvoiceRepository invoiceRepository;
+    private final QrPaymentService qrPaymentService;
 
     private static final String REPORT_TITLE_PARAM = "REPORT_TITLE";
+
+    private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("d.M.yyyy");
+
+    /** Czech labels of the order statuses shown on the printed order. */
+    private static final Map<OrderEntity.OrderStatus, String> STATUS_LABELS = Map.of(
+            OrderEntity.OrderStatus.NEW, "Nová",
+            OrderEntity.OrderStatus.CONFIRMED, "Potvrzená",
+            OrderEntity.OrderStatus.IN_PROGRESS, "V realizaci",
+            OrderEntity.OrderStatus.COMPLETED, "Dokončená",
+            OrderEntity.OrderStatus.CANCELLED, "Stornovaná");
 
     private final Map<String, JasperReport> reportCache = new ConcurrentHashMap<>();
 
@@ -90,6 +117,186 @@ public class ReportService {
         Map<String, Object> params = new HashMap<>();
         params.put(REPORT_TITLE_PARAM, "Orders overview");
         return exportPdf("reports/customer_orders.jrxml", params, data);
+    }
+
+    /**
+     * Printable document of a single order: supplier (the default own company), customer,
+     * item table and totals. The layout follows the common Czech order form.
+     */
+    public byte[] orderPrintReport(UUID orderId) {
+        OrderEntity order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new NotFoundException("Order", orderId));
+        List<Map<String, ?>> data = order.getItems().stream()
+                .<Map<String, ?>>map(item -> {
+                    Map<String, Object> row = new HashMap<>();
+                    row.put("itemCode", item.getItem() == null ? null : item.getItem().getCode());
+                    row.put("itemName", item.getItem() == null ? null : item.getItem().getName());
+                    row.put("quantity", item.getQuantity());
+                    row.put("unit", item.getItem() == null ? null : item.getItem().getUnit());
+                    row.put("unitPrice", item.getUnitPrice());
+                    row.put("totalPrice", item.getTotalPrice());
+                    return row;
+                })
+                .toList();
+        Map<String, Object> params = new HashMap<>();
+        params.put("ORDER_NUMBER", order.getOrderNumber());
+        params.put("ORDER_DATE", order.getOrderDate() == null ? null : order.getOrderDate().format(DATE_FORMAT));
+        params.put("STATUS", order.getStatus() == null ? null
+                : STATUS_LABELS.getOrDefault(order.getStatus(), order.getStatus().name()));
+        params.put("CURRENCY", order.getCurrency());
+        params.put("NOTE", order.getNote());
+        params.put("TOTAL_PRICE", order.getTotalPrice());
+        params.put("SALES_REPRESENTATIVE", resolveSalesRepresentativeName(order));
+        fillSupplierParams(params);
+        fillCustomerParams(params, order);
+        return exportPdf("reports/order_print.jrxml", params, data);
+    }
+
+    /**
+     * Printable invoice document: supplier (the default own company), customer, payment data
+     * (payment type, due date, variable symbol, bank account), item table with VAT and totals.
+     * The layout follows the common Czech VAT invoice (fakturyweb.cz sample no. 3). For invoices
+     * paid by bank transfer a payment QR code (SPD, "QR platba") is printed when the supplier
+     * has an IBAN defined.
+     */
+    public byte[] invoicePrintReport(UUID invoiceId) {
+        InvoiceEntity invoice = invoiceRepository.findById(invoiceId)
+                .orElseThrow(() -> new NotFoundException("Invoice", invoiceId));
+        List<Map<String, ?>> data = invoice.getItems().stream()
+                .<Map<String, ?>>map(item -> {
+                    Map<String, Object> row = new HashMap<>();
+                    row.put("itemCode", item.getItemCode());
+                    row.put("itemName", item.getItemName());
+                    row.put("quantity", item.getQuantity());
+                    row.put("unit", item.getUnit());
+                    row.put("unitPrice", item.getUnitPrice());
+                    row.put("vatRate", item.getVatRate());
+                    row.put("totalNet", item.getTotalNet());
+                    row.put("totalVat", item.getTotalVat());
+                    row.put("totalGross", item.getTotalGross());
+                    return row;
+                })
+                .toList();
+        Map<String, Object> params = new HashMap<>();
+        params.put("INVOICE_NUMBER", invoice.getInvoiceNumber());
+        params.put("ORDER_NUMBER", invoice.getOrder() == null ? null : invoice.getOrder().getOrderNumber());
+        params.put("ISSUE_DATE", invoice.getIssueDate() == null ? null : invoice.getIssueDate().format(DATE_FORMAT));
+        params.put("TAX_DATE", invoice.getTaxDate() == null ? null : invoice.getTaxDate().format(DATE_FORMAT));
+        params.put("DUE_DATE", invoice.getDueDate() == null ? null : invoice.getDueDate().format(DATE_FORMAT));
+        params.put("PAYMENT_TYPE", invoice.getPaymentType() == InvoiceEntity.PaymentType.CASH
+                ? "Hotově" : "Převodem");
+        params.put("VARIABLE_SYMBOL",
+                invoice.getPaymentType() == InvoiceEntity.PaymentType.TRANSFER ? invoice.getVariableSymbol() : null);
+        params.put("CURRENCY", invoice.getCurrency());
+        params.put("NOTE", invoice.getNote());
+        params.put("TOTAL_NET", invoice.getTotalNet());
+        params.put("TOTAL_VAT", invoice.getTotalVat());
+        params.put("TOTAL_GROSS", invoice.getTotalGross());
+        fillVatRecapParams(params, invoice);
+        CompanyEntity company = companyRepository.findByDefaultCompanyTrueAndDeletedFalse().orElse(null);
+        fillSupplierParams(params);
+        fillCustomerParams(params, invoice.getOrder());
+        fillPaymentQrParams(params, invoice, company);
+        return exportPdf("reports/invoice_print.jrxml", params, data);
+    }
+
+    /** VAT recapitulation: net, VAT and gross amounts aggregated by the VAT rate. */
+    private void fillVatRecapParams(Map<String, Object> params, InvoiceEntity invoice) {
+        StringBuilder recap = new StringBuilder();
+        invoice.getItems().stream()
+                .collect(java.util.stream.Collectors.groupingBy(
+                        item -> item.getVatRate() == null ? java.math.BigDecimal.ZERO : item.getVatRate().stripTrailingZeros(),
+                        java.util.TreeMap::new,
+                        java.util.stream.Collectors.toList()))
+                .forEach((rate, items) -> {
+                    java.math.BigDecimal net = items.stream().map(InvoiceItemEntity::getTotalNet)
+                            .filter(java.util.Objects::nonNull).reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+                    java.math.BigDecimal vat = items.stream().map(InvoiceItemEntity::getTotalVat)
+                            .filter(java.util.Objects::nonNull).reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+                    java.text.DecimalFormat money = new java.text.DecimalFormat("#,##0.00");
+                    recap.append("Sazba ").append(rate.toPlainString()).append(" %: základ ")
+                            .append(money.format(net)).append(", DPH ").append(money.format(vat))
+                            .append(", celkem ").append(money.format(net.add(vat))).append('\n');
+                });
+        params.put("VAT_RECAP", recap.isEmpty() ? null : recap.toString());
+    }
+
+    /** Payment QR code (SPD) is printed only on transfer invoices when the supplier has an IBAN. */
+    private void fillPaymentQrParams(Map<String, Object> params, InvoiceEntity invoice, CompanyEntity company) {
+        if (invoice.getPaymentType() != InvoiceEntity.PaymentType.TRANSFER
+                || company == null || !isNotBlank(company.getIban())) {
+            return;
+        }
+        String paymentString = qrPaymentService.buildPaymentString(company.getIban(), invoice.getTotalGross(),
+                invoice.getCurrency(), invoice.getVariableSymbol(), "FAKTURA " + invoice.getInvoiceNumber());
+        params.put("QR_IMAGE", qrPaymentService.generateQrImage(paymentString));
+    }
+
+    /** Supplier of the order document is the default own company (when defined). */
+    private void fillSupplierParams(Map<String, Object> params) {
+        CompanyEntity company = companyRepository.findByDefaultCompanyTrueAndDeletedFalse().orElse(null);
+        if (company == null) {
+            return;
+        }
+        params.put("SUPPLIER_NAME", company.getNameSecondLine() == null
+                ? company.getName() : company.getName() + " " + company.getNameSecondLine());
+        params.put("SUPPLIER_ADDRESS", formatAddress(company.getAddress()));
+        params.put("SUPPLIER_REG_ID", company.getRegistrationId());
+        params.put("SUPPLIER_VAT_ID", company.getVatId());
+        params.put("SUPPLIER_CONTACT", joinNonBlank(" | ", company.getEmail(), company.getPhone()));
+        params.put("SUPPLIER_BANK", company.getBankAccount());
+        params.put("SUPPLIER_IBAN", company.getIban());
+    }
+
+    private void fillCustomerParams(Map<String, Object> params, OrderEntity order) {
+        CustomerEntity customer = order.getCustomer();
+        if (customer == null) {
+            return;
+        }
+        params.put("CUSTOMER_NAME", customer.getName());
+        params.put("CUSTOMER_ADDRESS", formatAddress(customer.getHeadquartersAddress()));
+        params.put("CUSTOMER_REG_ID", customer.getRegistrationId());
+        params.put("CUSTOMER_VAT_ID", customer.getVatId());
+        String contact = order.getContactPerson() == null ? null
+                : joinNonBlank(" | ",
+                joinNonBlank(" ", order.getContactPerson().getFirstName(), order.getContactPerson().getLastName()),
+                order.getContactPerson().getEmail(), order.getContactPerson().getPhone());
+        params.put("CUSTOMER_CONTACT", contact);
+    }
+
+    private String resolveSalesRepresentativeName(OrderEntity order) {
+        var representative = order.getSalesRepresentative();
+        if (representative == null) {
+            return null;
+        }
+        String name = representative.getUser() == null ? null
+                : joinNonBlank(" ", representative.getUser().getFirstName(), representative.getUser().getLastName());
+        return name == null ? representative.getCode() : name;
+    }
+
+    private String formatAddress(AddressEntity address) {
+        if (address == null) {
+            return null;
+        }
+        String street = isNotBlank(address.getStreetNumber())
+                ? address.getStreetNumber()
+                : joinNonBlank(" ", address.getStreet(), address.getHouseNumber());
+        return joinNonBlank(", ", street, joinNonBlank(" ", address.getZipCode(), address.getCity()));
+    }
+
+    /** Joins the non-blank values with the given separator; returns {@code null} when nothing remains. */
+    private String joinNonBlank(String separator, String... values) {
+        List<String> parts = new ArrayList<>();
+        for (String value : values) {
+            if (isNotBlank(value)) {
+                parts.add(value);
+            }
+        }
+        return parts.isEmpty() ? null : String.join(separator, parts);
+    }
+
+    private boolean isNotBlank(String value) {
+        return value != null && !value.isBlank();
     }
 
     private byte[] exportPdf(String templatePath, Map<String, Object> params, List<Map<String, ?>> data) {

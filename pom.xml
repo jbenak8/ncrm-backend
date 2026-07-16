@@ -110,6 +110,23 @@
             <artifactId>jasperreports-pdf</artifactId>
             <version>7.0.4</version>
         </dependency>
+        <!-- DejaVu font extension so that PDF reports render Czech diacritics correctly. -->
+        <dependency>
+            <groupId>net.sf.jasperreports</groupId>
+            <artifactId>jasperreports-fonts</artifactId>
+            <version>7.0.4</version>
+        </dependency>
+        <!-- QR code generation for the payment QR code (SPD) printed on invoices. -->
+        <dependency>
+            <groupId>com.google.zxing</groupId>
+            <artifactId>core</artifactId>
+            <version>3.5.3</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.zxing</groupId>
+            <artifactId>javase</artifactId>
+            <version>3.5.3</version>
+        </dependency>
 
         <dependency>
             <groupId>org.postgresql</groupId>

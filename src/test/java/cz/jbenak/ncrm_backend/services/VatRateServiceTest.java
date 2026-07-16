@@ -14,6 +14,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.Month;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -43,7 +44,7 @@ class VatRateServiceTest {
 
     private VatRateRequest request(LocalDateTime validTo) {
         return new VatRateRequest("CZE", VATRate.VATType.BASE, new BigDecimal("21.00"),
-                LocalDateTime.of(2026, 1, 1, 0, 0), validTo);
+                LocalDateTime.of(2026, Month.JANUARY, 1, 0, 0), validTo);
     }
 
     @Test
@@ -92,14 +93,16 @@ class VatRateServiceTest {
         when(vatRateMapper.toEntity(any(VatRateRequest.class))).thenReturn(new VATRate());
         when(countryRepository.findById("CZE")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> vatRateService.create(request(null)))
+        VatRateRequest request = request(null);
+        assertThatThrownBy(() -> vatRateService.create(request))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessageContaining("CZE");
     }
 
     @Test
     void createRejectsInvalidValidityPeriod() {
-        assertThatThrownBy(() -> vatRateService.create(request(LocalDateTime.of(2025, 1, 1, 0, 0))))
+        VatRateRequest request = request(LocalDateTime.of(2025, Month.JANUARY, 1, 0, 0));
+        assertThatThrownBy(() -> vatRateService.create(request))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("validity");
     }

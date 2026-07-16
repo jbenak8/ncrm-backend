@@ -56,6 +56,8 @@ class OrderServiceTest {
     private OrderMapper orderMapper;
     @Mock
     private OrderEmailService orderEmailService;
+    @Mock
+    private NumberSequenceService numberSequenceService;
 
     @InjectMocks
     private OrderService orderService;

@@ -26,6 +26,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -46,7 +47,7 @@ public class ItemService {
 
     private static final Set<String> ALLOWED_IMAGE_CONTENT_TYPES =
             Set.of("image/png", "image/jpeg", "image/gif", "image/webp", "image/svg+xml");
-    private static final long MAX_IMAGE_SIZE_BYTES = 2 * 1024 * 1024;
+    private static final long MAX_IMAGE_SIZE_BYTES = 2 * 1024L * 1024;
 
     /** Attribute paths of the item entity that can be used by the generic search API. */
     private static final Set<String> SEARCHABLE_FIELDS = Set.of(
@@ -268,7 +269,7 @@ public class ItemService {
     private void applyPrice(ItemEntity entity, ItemRequest request) {
         ItemPriceEntity price = entity.getPrice();
         if (price == null) {
-            price = ItemPriceEntity.builder().item(entity).validFrom(LocalDateTime.now()).build();
+            price = ItemPriceEntity.builder().item(entity).validFrom(LocalDateTime.now(ZoneId.systemDefault())).build();
             entity.setPrice(price);
         }
         price.setPrice(request.price());

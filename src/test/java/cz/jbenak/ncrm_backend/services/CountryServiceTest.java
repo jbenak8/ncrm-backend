@@ -69,7 +69,8 @@ class CountryServiceTest {
     void createRejectsDuplicateIsoCode() {
         when(countryRepository.existsById("CZE")).thenReturn(true);
 
-        assertThatThrownBy(() -> countryService.create(request()))
+        CountryDto request = request();
+        assertThatThrownBy(() -> countryService.create(request))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("CZE");
         verify(countryRepository, never()).save(new CountryEntity());

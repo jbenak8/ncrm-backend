@@ -98,7 +98,7 @@ class CompanyControllerTest {
         UUID id = UUID.randomUUID();
         mockMvc.perform(delete("/api/companies/{id}", id))
                 .andExpect(status().isNoContent());
-        verify(companyService).delete(eq(id), eq("owner"));
+        verify(companyService).delete(id, "owner");
     }
 
     @Test

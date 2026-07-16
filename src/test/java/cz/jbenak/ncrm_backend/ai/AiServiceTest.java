@@ -93,7 +93,9 @@ class AiServiceTest {
             return fallback.get();
         });
 
-        assertThatThrownBy(() -> service().chat(new AiDtos.ChatRequest("Hi", null, AiDtos.AiProvider.CLAUDE)))
+        AiService service = service();
+        AiDtos.ChatRequest request = new AiDtos.ChatRequest("Hi", null, AiDtos.AiProvider.CLAUDE);
+        assertThatThrownBy(() -> service.chat(request))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("not configured");
     }

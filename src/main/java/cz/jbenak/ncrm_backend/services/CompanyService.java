@@ -38,7 +38,7 @@ public class CompanyService {
 
     private static final Set<String> ALLOWED_LOGO_CONTENT_TYPES =
             Set.of("image/png", "image/jpeg", "image/gif", "image/webp", "image/svg+xml");
-    private static final long MAX_LOGO_SIZE_BYTES = 2 * 1024 * 1024;
+    private static final long MAX_LOGO_SIZE_BYTES = 2 * 1024L * 1024;
 
     private final CompanyRepository companyRepository;
     private final CountryRepository countryRepository;

@@ -88,8 +88,9 @@ class CampaignServiceTest {
         UUID customerId = UUID.randomUUID();
         when(customerRepository.findById(customerId)).thenReturn(Optional.of(customer(" ")));
 
-        assertThatThrownBy(() -> campaignService.create(new CampaignRequest("Summer", "Sale", "body",
-                null, null, List.of(customerId)), null))
+        CampaignRequest request = new CampaignRequest("Summer", "Sale", "body",
+                null, null, List.of(customerId));
+        assertThatThrownBy(() -> campaignService.create(request, null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("no recipients");
     }
@@ -99,8 +100,9 @@ class CampaignServiceTest {
         UUID customerId = UUID.randomUUID();
         when(customerRepository.findById(customerId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> campaignService.create(new CampaignRequest("Summer", "Sale", "body",
-                null, null, List.of(customerId)), "owner"))
+        CampaignRequest request = new CampaignRequest("Summer", "Sale", "body",
+                null, null, List.of(customerId));
+        assertThatThrownBy(() -> campaignService.create(request, "owner"))
                 .isInstanceOf(NotFoundException.class);
     }
 

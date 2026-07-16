@@ -57,9 +57,15 @@ public class GlobalExceptionHandler {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Malformed request body");
     }
 
-    @ExceptionHandler({AccessDeniedException.class, AuthenticationException.class})
-    public void handleSecurity(Exception ex) throws Exception {
-        // Rethrown so that Spring Security's own handling produces the correct 401/403 response.
+    @ExceptionHandler(AccessDeniedException.class)
+    public void handleAccessDenied(AccessDeniedException ex) {
+        // Rethrown so that Spring Security's own handling produces the correct 403 response.
+        throw ex;
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public void handleAuthentication(AuthenticationException ex) {
+        // Rethrown so that Spring Security's own handling produces the correct 401 response.
         throw ex;
     }
 

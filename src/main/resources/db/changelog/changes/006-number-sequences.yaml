@@ -1,0 +1,20 @@
+databaseChangeLog:
+
+  - changeSet:
+      id: 006-01-number-sequences
+      author: jbenak
+      changes:
+        - createTable:
+            tableName: number_sequences
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: type, type: varchar(20), constraints: { nullable: false, unique: true, uniqueConstraintName: uc_number_sequences_type } }
+              - column: { name: prefix, type: varchar(20) }
+              - column: { name: include_year, type: boolean, defaultValueBoolean: true, constraints: { nullable: false } }
+              - column: { name: padding, type: integer, defaultValueNumeric: 6, constraints: { nullable: false } }
+              - column: { name: next_value, type: bigint, defaultValueNumeric: 1, constraints: { nullable: false } }
+              - column: { name: yearly_reset, type: boolean, defaultValueBoolean: true, constraints: { nullable: false } }
+              - column: { name: last_reset_year, type: integer }
+              - column: { name: description, type: varchar(255) }
+              - column: { name: created_at, type: timestamp, defaultValueComputed: CURRENT_TIMESTAMP, constraints: { nullable: false } }
+              - column: { name: updated_at, type: timestamp }

@@ -13,8 +13,10 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 
 /**
  * @author Jan Benák
@@ -26,6 +28,23 @@ import java.util.UUID;
  * All criteria are combined with a logical AND.
  */
 public final class SearchSpecificationBuilder {
+
+    /** Converters of raw filter values to the Java types of the filterable entity attributes. */
+    private static final Map<Class<?>, Function<String, Object>> CONVERTERS = Map.ofEntries(
+            Map.entry(String.class, rawValue -> rawValue),
+            Map.entry(Boolean.class, Boolean::parseBoolean),
+            Map.entry(boolean.class, Boolean::parseBoolean),
+            Map.entry(Integer.class, Integer::valueOf),
+            Map.entry(int.class, Integer::valueOf),
+            Map.entry(Long.class, Long::valueOf),
+            Map.entry(long.class, Long::valueOf),
+            Map.entry(BigDecimal.class, BigDecimal::new),
+            Map.entry(Double.class, Double::valueOf),
+            Map.entry(double.class, Double::valueOf),
+            Map.entry(UUID.class, UUID::fromString),
+            Map.entry(LocalDate.class, LocalDate::parse),
+            Map.entry(LocalDateTime.class, LocalDateTime::parse),
+            Map.entry(OffsetDateTime.class, OffsetDateTime::parse));
 
     private SearchSpecificationBuilder() {
     }
@@ -115,47 +134,22 @@ public final class SearchSpecificationBuilder {
         return comparable;
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
     private static Object convert(SearchCriterion criterion, Class<?> type, String rawValue) {
+        Function<String, Object> converter = type.isEnum() ? enumConverter(type) : CONVERTERS.get(type);
+        if (converter == null) {
+            throw new IllegalArgumentException("Filtering by field '" + criterion.field() + "' of type "
+                    + type.getSimpleName() + " is not supported");
+        }
         try {
-            if (String.class.equals(type)) {
-                return rawValue;
-            }
-            if (Boolean.class.equals(type) || boolean.class.equals(type)) {
-                return Boolean.parseBoolean(rawValue);
-            }
-            if (Integer.class.equals(type) || int.class.equals(type)) {
-                return Integer.valueOf(rawValue);
-            }
-            if (Long.class.equals(type) || long.class.equals(type)) {
-                return Long.valueOf(rawValue);
-            }
-            if (BigDecimal.class.equals(type)) {
-                return new BigDecimal(rawValue);
-            }
-            if (Double.class.equals(type) || double.class.equals(type)) {
-                return Double.valueOf(rawValue);
-            }
-            if (UUID.class.equals(type)) {
-                return UUID.fromString(rawValue);
-            }
-            if (LocalDate.class.equals(type)) {
-                return LocalDate.parse(rawValue);
-            }
-            if (LocalDateTime.class.equals(type)) {
-                return LocalDateTime.parse(rawValue);
-            }
-            if (OffsetDateTime.class.equals(type)) {
-                return OffsetDateTime.parse(rawValue);
-            }
-            if (type.isEnum()) {
-                return Enum.valueOf((Class<Enum>) type, rawValue.toUpperCase(Locale.ROOT));
-            }
-        } catch (IllegalArgumentException | java.time.format.DateTimeParseException e) {
+            return converter.apply(rawValue);
+        } catch (IllegalArgumentException | java.time.format.DateTimeParseException _) {
             throw new IllegalArgumentException("Invalid value '" + rawValue + "' for field '"
                     + criterion.field() + "' of type " + type.getSimpleName());
         }
-        throw new IllegalArgumentException("Filtering by field '" + criterion.field() + "' of type "
-                + type.getSimpleName() + " is not supported");
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private static Function<String, Object> enumConverter(Class<?> type) {
+        return rawValue -> Enum.valueOf((Class<Enum>) type, rawValue.toUpperCase(Locale.ROOT));
     }
 }

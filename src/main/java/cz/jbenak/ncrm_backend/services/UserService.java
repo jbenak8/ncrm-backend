@@ -48,6 +48,7 @@ public class UserService {
     private static final Set<String> SEARCHABLE_FIELDS = Set.of(
             "username", "email", "firstName", "lastName", "enabled", "locked",
             "credentialsExpired", "mustChangePassword", "lastLoginAt");
+    private static final String NOT_FOUND_TEXT = " not found.";
 
     private final UserRepository userRepository;
     private final SalesRepresentativeRepository salesRepresentativeRepository;
@@ -81,7 +82,7 @@ public class UserService {
     @Transactional(readOnly = true)
     public UserDto findByUsername(String username) {
         return userRepository.findByUsername(username).map(userMapper::toDto)
-                .orElseThrow(() -> new NotFoundException("User " + username + " not found"));
+                .orElseThrow(() -> new NotFoundException("User " + username + NOT_FOUND_TEXT));
     }
 
     @Transactional(readOnly = true)
@@ -172,7 +173,7 @@ public class UserService {
      */
     public UserDto changePassword(String username, ChangePasswordRequest request) {
         UserEntity user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new NotFoundException("User " + username + " not found"));
+                .orElseThrow(() -> new NotFoundException("User " + username + NOT_FOUND_TEXT));
         if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
             throw new IllegalArgumentException("Current password is not valid");
         }
@@ -213,7 +214,7 @@ public class UserService {
     private Set<RoleEntity> resolveRoles(Set<String> roleNames) {
         return roleNames == null ? new HashSet<>() : roleNames.stream()
                 .map(name -> roleRepository.findByName(name)
-                        .orElseThrow(() -> new NotFoundException("Role " + name + " not found")))
+                        .orElseThrow(() -> new NotFoundException("Role " + name + NOT_FOUND_TEXT)))
                 .collect(Collectors.toCollection(HashSet::new));
     }
 }

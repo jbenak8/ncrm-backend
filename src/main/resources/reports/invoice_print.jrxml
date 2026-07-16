@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Printable invoice document (Czech VAT invoice layout following fakturyweb.cz sample no. 3):
+     supplier/customer header, payment block (payment type, dates, variable symbol, bank account),
+     item table with VAT, VAT recapitulation, total and a payment QR code (SPD) for bank transfer.
+     JasperReports 7 format. -->
+<jasperReport name="invoice_print" language="java" pageWidth="595" pageHeight="842" columnWidth="535"
+              leftMargin="30" rightMargin="30" topMargin="30" bottomMargin="30">
+
+    <style name="Base" default="true" fontName="DejaVu Sans" fontSize="9.0"/>
+
+    <parameter name="INVOICE_NUMBER" class="java.lang.String"/>
+    <parameter name="ORDER_NUMBER" class="java.lang.String"/>
+    <parameter name="ISSUE_DATE" class="java.lang.String"/>
+    <parameter name="TAX_DATE" class="java.lang.String"/>
+    <parameter name="DUE_DATE" class="java.lang.String"/>
+    <parameter name="PAYMENT_TYPE" class="java.lang.String"/>
+    <parameter name="VARIABLE_SYMBOL" class="java.lang.String"/>
+    <parameter name="CURRENCY" class="java.lang.String"/>
+    <parameter name="NOTE" class="java.lang.String"/>
+    <parameter name="TOTAL_NET" class="java.math.BigDecimal"/>
+    <parameter name="TOTAL_VAT" class="java.math.BigDecimal"/>
+    <parameter name="TOTAL_GROSS" class="java.math.BigDecimal"/>
+    <parameter name="VAT_RECAP" class="java.lang.String"/>
+    <parameter name="QR_IMAGE" class="java.awt.Image"/>
+
+    <parameter name="SUPPLIER_NAME" class="java.lang.String"/>
+    <parameter name="SUPPLIER_ADDRESS" class="java.lang.String"/>
+    <parameter name="SUPPLIER_REG_ID" class="java.lang.String"/>
+    <parameter name="SUPPLIER_VAT_ID" class="java.lang.String"/>
+    <parameter name="SUPPLIER_CONTACT" class="java.lang.String"/>
+    <parameter name="SUPPLIER_BANK" class="java.lang.String"/>
+    <parameter name="SUPPLIER_IBAN" class="java.lang.String"/>
+
+    <parameter name="CUSTOMER_NAME" class="java.lang.String"/>
+    <parameter name="CUSTOMER_ADDRESS" class="java.lang.String"/>
+    <parameter name="CUSTOMER_REG_ID" class="java.lang.String"/>
+    <parameter name="CUSTOMER_VAT_ID" class="java.lang.String"/>
+    <parameter name="CUSTOMER_CONTACT" class="java.lang.String"/>
+
+    <field name="itemCode" class="java.lang.String"/>
+    <field name="itemName" class="java.lang.String"/>
+    <field name="quantity" class="java.math.BigDecimal"/>
+    <field name="unit" class="java.lang.String"/>
+    <field name="unitPrice" class="java.math.BigDecimal"/>
+    <field name="vatRate" class="java.math.BigDecimal"/>
+    <field name="totalNet" class="java.math.BigDecimal"/>
+    <field name="totalVat" class="java.math.BigDecimal"/>
+    <field name="totalGross" class="java.math.BigDecimal"/>
+
+    <title height="290">
+        <element kind="textField" x="0" y="0" width="535" height="30" fontSize="18.0" bold="true">
+            <expression><![CDATA["FAKTURA – daňový doklad č. " + $P{INVOICE_NUMBER}]]></expression>
+        </element>
+
+        <!-- Supplier block -->
+        <element kind="staticText" x="0" y="40" width="255" height="14" bold="true">
+            <text><![CDATA[Dodavatel:]]></text>
+        </element>
+        <element kind="textField" x="0" y="56" width="255" height="14" bold="true" blankWhenNull="true">
+            <expression><![CDATA[$P{SUPPLIER_NAME}]]></expression>
+        </element>
+        <element kind="textField" x="0" y="70" width="255" height="14" blankWhenNull="true">
+            <expression><![CDATA[$P{SUPPLIER_ADDRESS}]]></expression>
+        </element>
+        <element kind="textField" x="0" y="84" width="255" height="14" blankWhenNull="true">
+            <expression><![CDATA[$P{SUPPLIER_REG_ID} == null ? null : ("IČ: " + $P{SUPPLIER_REG_ID})]]></expression>
+        </element>
+        <element kind="textField" x="0" y="98" width="255" height="14" blankWhenNull="true">
+            <expression><![CDATA[$P{SUPPLIER_VAT_ID} == null ? null : ("DIČ: " + $P{SUPPLIER_VAT_ID})]]></expression>
+        </element>
+        <element kind="textField" x="0" y="112" width="255" height="14" blankWhenNull="true">
+            <expression><![CDATA[$P{SUPPLIER_CONTACT}]]></expression>
+        </element>
+
+        <!-- Customer block -->
+        <element kind="staticText" x="280" y="40" width="255" height="14" bold="true">
+            <text><![CDATA[Odběratel:]]></text>
+        </element>
+        <element kind="textField" x="280" y="56" width="255" height="14" bold="true" blankWhenNull="true">
+            <expression><![CDATA[$P{CUSTOMER_NAME}]]></expression>
+        </element>
+        <element kind="textField" x="280" y="70" width="255" height="14" blankWhenNull="true">
+            <expression><![CDATA[$P{CUSTOMER_ADDRESS}]]></expression>
+        </element>
+        <element kind="textField" x="280" y="84" width="255" height="14" blankWhenNull="true">
+            <expression><![CDATA[$P{CUSTOMER_REG_ID} == null ? null : ("IČ: " + $P{CUSTOMER_REG_ID})]]></expression>
+        </element>
+        <element kind="textField" x="280" y="98" width="255" height="14" blankWhenNull="true">
+            <expression><![CDATA[$P{CUSTOMER_VAT_ID} == null ? null : ("DIČ: " + $P{CUSTOMER_VAT_ID})]]></expression>
+        </element>
+        <element kind="textField" x="280" y="112" width="255" height="14" blankWhenNull="true">
+            <expression><![CDATA[$P{CUSTOMER_CONTACT}]]></expression>
+        </element>
+
+        <!-- Payment block -->
+        <element kind="line" x="0" y="136" width="535" height="1"/>
+        <element kind="textField" x="0" y="144" width="255" height="14" blankWhenNull="true">
+            <expression><![CDATA[$P{PAYMENT_TYPE} == null ? null : ("Forma úhrady: " + $P{PAYMENT_TYPE})]]></expression>
+        </element>
+        <element kind="textField" x="0" y="158" width="255" height="14" blankWhenNull="true">
+            <expression><![CDATA[$P{SUPPLIER_BANK} == null ? null : ("Bankovní účet: " + $P{SUPPLIER_BANK})]]></expression>
+        </element>
+        <element kind="textField" x="0" y="172" width="255" height="14" blankWhenNull="true">
+            <expression><![CDATA[$P{SUPPLIER_IBAN} == null ? null : ("IBAN: " + $P{SUPPLIER_IBAN})]]></expression>
+        </element>
+        <element kind="textField" x="0" y="186" width="255" height="14" bold="true" blankWhenNull="true">
+            <expression><![CDATA[$P{VARIABLE_SYMBOL} == null ? null : ("Variabilní symbol: " + $P{VARIABLE_SYMBOL})]]></expression>
+        </element>
+        <element kind="textField" x="280" y="144" width="255" height="14" blankWhenNull="true">
+            <expression><![CDATA[$P{ISSUE_DATE} == null ? null : ("Datum vystavení: " + $P{ISSUE_DATE})]]></expression>
+        </element>
+        <element kind="textField" x="280" y="158" width="255" height="14" blankWhenNull="true">
+            <expression><![CDATA[$P{TAX_DATE} == null ? null : ("Datum usk. zdanit. plnění: " + $P{TAX_DATE})]]></expression>
+        </element>
+        <element kind="textField" x="280" y="172" width="255" height="14" bold="true" blankWhenNull="true">
+            <expression><![CDATA[$P{DUE_DATE} == null ? null : ("Datum splatnosti: " + $P{DUE_DATE})]]></expression>
+        </element>
+        <element kind="textField" x="280" y="186" width="255" height="14" blankWhenNull="true">
+            <expression><![CDATA[$P{ORDER_NUMBER} == null ? null : ("Objednávka č.: " + $P{ORDER_NUMBER})]]></expression>
+        </element>
+        <element kind="line" x="0" y="210" width="535" height="1"/>
+
+        <!-- Item table header -->
+        <element kind="staticText" x="0" y="220" width="55" height="18" bold="true">
+            <text><![CDATA[Kód]]></text>
+        </element>
+        <element kind="staticText" x="55" y="220" width="150" height="18" bold="true">
+            <text><![CDATA[Označení dodávky]]></text>
+        </element>
+        <element kind="staticText" x="205" y="220" width="55" height="18" bold="true" hTextAlign="Right">
+            <text><![CDATA[Množství]]></text>
+        </element>
+        <element kind="staticText" x="260" y="220" width="30" height="18" bold="true">
+            <text><![CDATA[ MJ]]></text>
+        </element>
+        <element kind="staticText" x="290" y="220" width="60" height="18" bold="true" hTextAlign="Right">
+            <text><![CDATA[Cena/MJ]]></text>
+        </element>
+        <element kind="staticText" x="350" y="220" width="40" height="18" bold="true" hTextAlign="Right">
+            <text><![CDATA[DPH %]]></text>
+        </element>
+        <element kind="staticText" x="390" y="220" width="50" height="18" bold="true" hTextAlign="Right">
+            <text><![CDATA[Základ]]></text>
+        </element>
+        <element kind="staticText" x="440" y="220" width="45" height="18" bold="true" hTextAlign="Right">
+            <text><![CDATA[DPH]]></text>
+        </element>
+        <element kind="staticText" x="485" y="220" width="50" height="18" bold="true" hTextAlign="Right">
+            <text><![CDATA[Celkem]]></text>
+        </element>
+        <element kind="line" x="0" y="240" width="535" height="1"/>
+    </title>
+
+    <detail>
+        <band height="16">
+            <element kind="textField" x="0" y="0" width="55" height="14" blankWhenNull="true">
+                <expression><![CDATA[$F{itemCode}]]></expression>
+            </element>
+            <element kind="textField" x="55" y="0" width="150" height="14" blankWhenNull="true">
+                <expression><![CDATA[$F{itemName}]]></expression>
+            </element>
+            <element kind="textField" x="205" y="0" width="55" height="14" pattern="#,##0.###" hTextAlign="Right" blankWhenNull="true">
+                <expression><![CDATA[$F{quantity}]]></expression>
+            </element>
+            <element kind="textField" x="260" y="0" width="30" height="14" blankWhenNull="true">
+                <expression><![CDATA[$F{unit} == null ? null : (" " + $F{unit})]]></expression>
+            </element>
+            <element kind="textField" x="290" y="0" width="60" height="14" pattern="#,##0.00" hTextAlign="Right" blankWhenNull="true">
+                <expression><![CDATA[$F{unitPrice}]]></expression>
+            </element>
+            <element kind="textField" x="350" y="0" width="40" height="14" pattern="#,##0.##" hTextAlign="Right" blankWhenNull="true">
+                <expression><![CDATA[$F{vatRate}]]></expression>
+            </element>
+            <element kind="textField" x="390" y="0" width="50" height="14" pattern="#,##0.00" hTextAlign="Right" blankWhenNull="true">
+                <expression><![CDATA[$F{totalNet}]]></expression>
+            </element>
+            <element kind="textField" x="440" y="0" width="45" height="14" pattern="#,##0.00" hTextAlign="Right" blankWhenNull="true">
+                <expression><![CDATA[$F{totalVat}]]></expression>
+            </element>
+            <element kind="textField" x="485" y="0" width="50" height="14" pattern="#,##0.00" hTextAlign="Right" blankWhenNull="true">
+                <expression><![CDATA[$F{totalGross}]]></expression>
+            </element>
+        </band>
+    </detail>
+
+    <summary height="230">
+        <element kind="line" x="0" y="4" width="535" height="1"/>
+
+        <!-- VAT recapitulation -->
+        <element kind="staticText" x="0" y="12" width="255" height="14" bold="true">
+            <text><![CDATA[Rekapitulace DPH:]]></text>
+        </element>
+        <element kind="textField" x="0" y="28" width="300" height="42" blankWhenNull="true" textAdjust="StretchHeight">
+            <expression><![CDATA[$P{VAT_RECAP}]]></expression>
+        </element>
+
+        <!-- Totals -->
+        <element kind="textField" x="285" y="12" width="250" height="14" hTextAlign="Right" blankWhenNull="true">
+            <expression><![CDATA[$P{TOTAL_NET} == null ? null : ("Základ celkem: "
+                + new java.text.DecimalFormat("#,##0.00").format($P{TOTAL_NET})
+                + ($P{CURRENCY} == null ? "" : (" " + $P{CURRENCY})))]]></expression>
+        </element>
+        <element kind="textField" x="285" y="26" width="250" height="14" hTextAlign="Right" blankWhenNull="true">
+            <expression><![CDATA[$P{TOTAL_VAT} == null ? null : ("DPH celkem: "
+                + new java.text.DecimalFormat("#,##0.00").format($P{TOTAL_VAT})
+                + ($P{CURRENCY} == null ? "" : (" " + $P{CURRENCY})))]]></expression>
+        </element>
+        <element kind="textField" x="285" y="44" width="250" height="20" fontSize="12.0" bold="true" hTextAlign="Right" blankWhenNull="true">
+            <expression><![CDATA["Celkem k úhradě: "
+                + ($P{TOTAL_GROSS} == null ? "" : new java.text.DecimalFormat("#,##0.00").format($P{TOTAL_GROSS}))
+                + ($P{CURRENCY} == null ? "" : (" " + $P{CURRENCY}))]]></expression>
+        </element>
+
+        <!-- Payment QR code (only for bank transfer invoices) -->
+        <element kind="image" x="0" y="80" width="110" height="110" scaleImage="RetainShape" hImageAlign="Left">
+            <printWhenExpression><![CDATA[$P{QR_IMAGE} != null]]></printWhenExpression>
+            <expression><![CDATA[$P{QR_IMAGE}]]></expression>
+        </element>
+        <element kind="staticText" x="0" y="192" width="110" height="14" hTextAlign="Center">
+            <printWhenExpression><![CDATA[$P{QR_IMAGE} != null]]></printWhenExpression>
+            <text><![CDATA[QR platba]]></text>
+        </element>
+
+        <element kind="textField" x="130" y="90" width="405" height="28" blankWhenNull="true" textAdjust="StretchHeight">
+            <expression><![CDATA[$P{NOTE} == null ? null : ("Poznámka: " + $P{NOTE})]]></expression>
+        </element>
+
+        <element kind="staticText" x="335" y="190" width="200" height="26" hTextAlign="Center">
+            <text><![CDATA[.......................................
+razítko a podpis]]></text>
+        </element>
+    </summary>
+</jasperReport>

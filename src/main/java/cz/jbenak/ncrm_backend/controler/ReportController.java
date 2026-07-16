@@ -45,6 +45,12 @@ public class ReportController {
         return pdf("orders.pdf", reportService.customerOrdersReport(customerId));
     }
 
+    @GetMapping("/order/{orderId}/print")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'SALES_REPRESENTATIVE', 'CUSTOMER')")
+    public ResponseEntity<byte[]> orderPrintReport(@PathVariable UUID orderId) {
+        return pdf("objednavka.pdf", reportService.orderPrintReport(orderId));
+    }
+
     private ResponseEntity<byte[]> pdf(String filename, byte[] content) {
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_PDF)

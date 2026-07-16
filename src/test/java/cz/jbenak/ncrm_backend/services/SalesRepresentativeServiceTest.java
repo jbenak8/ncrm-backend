@@ -68,7 +68,8 @@ class SalesRepresentativeServiceTest {
     void createRejectsDuplicateCode() {
         when(salesRepresentativeRepository.findByCode("REP1")).thenReturn(Optional.of(new SalesRepresentativeEntity()));
 
-        assertThatThrownBy(() -> salesRepresentativeService.create(request()))
+        SalesRepresentativeRequest request = request();
+        assertThatThrownBy(() -> salesRepresentativeService.create(request))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("REP1");
     }
@@ -94,7 +95,8 @@ class SalesRepresentativeServiceTest {
         when(userMapper.toEntity(any(SalesRepresentativeRequest.class))).thenReturn(new SalesRepresentativeEntity());
         when(userRepository.findById(userId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> salesRepresentativeService.create(request()))
+        SalesRepresentativeRequest request = request();
+        assertThatThrownBy(() -> salesRepresentativeService.create(request))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessageContaining("User");
     }
@@ -109,7 +111,8 @@ class SalesRepresentativeServiceTest {
         when(salesRepresentativeRepository.findById(id)).thenReturn(Optional.of(entity));
         when(salesRepresentativeRepository.findByCode("REP1")).thenReturn(Optional.of(other));
 
-        assertThatThrownBy(() -> salesRepresentativeService.update(id, request()))
+        SalesRepresentativeRequest request = request();
+        assertThatThrownBy(() -> salesRepresentativeService.update(id, request))
                 .isInstanceOf(IllegalStateException.class);
     }
 
