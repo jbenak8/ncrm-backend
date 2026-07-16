@@ -5,6 +5,7 @@ import cz.jbenak.ncrm_backend.model.dto.store.ItemCategoryDto;
 import cz.jbenak.ncrm_backend.model.dto.store.ItemCategoryRequest;
 import cz.jbenak.ncrm_backend.model.dto.store.ItemDeleteResult;
 import cz.jbenak.ncrm_backend.model.dto.store.ItemDto;
+import cz.jbenak.ncrm_backend.model.dto.store.ItemImageDto;
 import cz.jbenak.ncrm_backend.model.dto.store.ItemRequest;
 import cz.jbenak.ncrm_backend.model.entity.store.ItemCategoryEntity;
 import cz.jbenak.ncrm_backend.model.entity.store.ItemEntity;
@@ -20,7 +21,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
@@ -39,6 +43,10 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class ItemService {
+
+    private static final Set<String> ALLOWED_IMAGE_CONTENT_TYPES =
+            Set.of("image/png", "image/jpeg", "image/gif", "image/webp", "image/svg+xml");
+    private static final long MAX_IMAGE_SIZE_BYTES = 2 * 1024 * 1024;
 
     /** Attribute paths of the item entity that can be used by the generic search API. */
     private static final Set<String> SEARCHABLE_FIELDS = Set.of(
@@ -126,6 +134,51 @@ public class ItemService {
         itemRepository.delete(entity);
         log.info("Deleted catalogue item {} ({})", id, entity.getCode());
         return new ItemDeleteResult(true, false);
+    }
+
+    /**
+     * Stores the image of the item shown by the frontend in the catalogue. Only common image
+     * media types are accepted and the file size is limited (see the constants above).
+     */
+    @Transactional
+    public ItemDto uploadImage(UUID id, MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("Image file must not be empty");
+        }
+        String contentType = file.getContentType();
+        if (contentType == null || !ALLOWED_IMAGE_CONTENT_TYPES.contains(contentType)) {
+            throw new IllegalArgumentException("Unsupported image content type " + contentType
+                    + ". Allowed types are: " + String.join(", ", ALLOWED_IMAGE_CONTENT_TYPES));
+        }
+        if (file.getSize() > MAX_IMAGE_SIZE_BYTES) {
+            throw new IllegalArgumentException("Image file exceeds the maximum allowed size of " + MAX_IMAGE_SIZE_BYTES + " bytes");
+        }
+        ItemEntity entity = getItem(id);
+        try {
+            entity.setImage(file.getBytes());
+        } catch (IOException e) {
+            throw new UncheckedIOException("Could not read the uploaded image file", e);
+        }
+        entity.setImageContentType(contentType);
+        log.info("Uploaded image ({}, {} bytes) for catalogue item {} ({})", contentType, file.getSize(), id, entity.getCode());
+        return itemMapper.toDto(itemRepository.save(entity));
+    }
+
+    public ItemImageDto getImage(UUID id) {
+        ItemEntity entity = getItem(id);
+        if (entity.getImage() == null) {
+            throw new NotFoundException("Item " + id + " has no image");
+        }
+        return new ItemImageDto(entity.getImage(), entity.getImageContentType());
+    }
+
+    @Transactional
+    public ItemDto deleteImage(UUID id) {
+        ItemEntity entity = getItem(id);
+        entity.setImage(null);
+        entity.setImageContentType(null);
+        log.info("Deleted image of catalogue item {} ({})", id, entity.getCode());
+        return itemMapper.toDto(itemRepository.save(entity));
     }
 
     @Transactional

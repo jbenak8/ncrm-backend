@@ -23,6 +23,7 @@ public interface ItemMapper {
 
     @Mapping(target = "categoryId", source = "category.id")
     @Mapping(target = "categoryName", source = "category.name")
+    @Mapping(target = "hasImage", expression = "java(entity.getImage() != null)")
     ItemDto toDto(ItemEntity entity);
 
     List<ItemDto> toDtoList(List<ItemEntity> entities);

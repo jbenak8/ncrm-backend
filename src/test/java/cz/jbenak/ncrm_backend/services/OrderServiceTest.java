@@ -29,6 +29,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -53,6 +54,8 @@ class OrderServiceTest {
     private ItemRepository itemRepository;
     @Mock
     private OrderMapper orderMapper;
+    @Mock
+    private OrderEmailService orderEmailService;
 
     @InjectMocks
     private OrderService orderService;
@@ -98,6 +101,70 @@ class OrderServiceTest {
         assertThat(saved.getCurrency()).isEqualTo("CZK");
         assertThat(saved.getStatus()).isEqualTo(OrderEntity.OrderStatus.NEW);
         assertThat(saved.getOrderNumber()).startsWith("ORD-");
+        verify(orderEmailService).sendOrderCreated(saved);
+    }
+
+    @Test
+    void updateReplacesItemsAndNotifiesCustomer() {
+        UUID orderId = UUID.randomUUID();
+        UUID customerId = UUID.randomUUID();
+        UUID repId = UUID.randomUUID();
+        UUID itemId = UUID.randomUUID();
+
+        OrderEntity order = new OrderEntity();
+        order.setOrderNumber("ORD-1");
+        order.setStatus(OrderEntity.OrderStatus.NEW);
+        order.addItem(item("5.00"));
+        when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
+        when(customerRepository.findById(customerId)).thenReturn(Optional.of(new CustomerEntity()));
+        when(salesRepresentativeRepository.findById(repId)).thenReturn(Optional.of(new SalesRepresentativeEntity()));
+
+        ItemEntity item = new ItemEntity();
+        item.setCode("IT-2");
+        ItemPriceEntity price = new ItemPriceEntity();
+        price.setPrice(new BigDecimal("20.00"));
+        price.setCurrency("CZK");
+        item.setPrice(price);
+        when(itemRepository.findById(itemId)).thenReturn(Optional.of(item));
+        when(orderRepository.save(any(OrderEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        OrderRequest request = new OrderRequest(customerId, null, repId, LocalDate.now(), null, null,
+                List.of(new OrderRequest.OrderItemRequest(itemId, new BigDecimal("2"))));
+        orderService.update(orderId, request);
+
+        assertThat(order.getItems()).hasSize(1);
+        assertThat(order.getItems().getFirst().getUnitPrice()).isEqualByComparingTo("20.00");
+        assertThat(order.getTotalPrice()).isEqualByComparingTo("40.00");
+        verify(orderEmailService).sendOrderUpdated(order);
+    }
+
+    @Test
+    void updateStatusNotifiesCustomerAboutChange() {
+        UUID orderId = UUID.randomUUID();
+        OrderEntity order = new OrderEntity();
+        order.setOrderNumber("ORD-1");
+        order.setStatus(OrderEntity.OrderStatus.NEW);
+        when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
+        when(orderRepository.save(order)).thenReturn(order);
+
+        orderService.updateStatus(orderId, OrderEntity.OrderStatus.CONFIRMED);
+
+        assertThat(order.getStatus()).isEqualTo(OrderEntity.OrderStatus.CONFIRMED);
+        verify(orderEmailService).sendOrderStatusChanged(order, OrderEntity.OrderStatus.NEW);
+    }
+
+    @Test
+    void updateStatusDoesNotNotifyWhenStatusIsUnchanged() {
+        UUID orderId = UUID.randomUUID();
+        OrderEntity order = new OrderEntity();
+        order.setOrderNumber("ORD-1");
+        order.setStatus(OrderEntity.OrderStatus.NEW);
+        when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
+        when(orderRepository.save(order)).thenReturn(order);
+
+        orderService.updateStatus(orderId, OrderEntity.OrderStatus.NEW);
+
+        verify(orderEmailService, never()).sendOrderStatusChanged(any(), any());
     }
 
     @Test

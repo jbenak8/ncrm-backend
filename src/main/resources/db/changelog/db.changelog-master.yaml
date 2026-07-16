@@ -7,3 +7,5 @@ databaseChangeLog:
       file: db/changelog/changes/003-company-logo.yaml
   - include:
       file: db/changelog/changes/004-default-admin-user.yaml
+  - include:
+      file: db/changelog/changes/005-item-image.yaml

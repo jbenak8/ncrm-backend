@@ -72,6 +72,12 @@ public class OrderController {
         return orderService.create(request);
     }
 
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'SALES_REPRESENTATIVE')")
+    public OrderDto update(@PathVariable UUID id, @Valid @RequestBody OrderRequest request) {
+        return orderService.update(id, request);
+    }
+
     @PostMapping("/{id}/status/{status}")
     @PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'SALES_REPRESENTATIVE')")
     public OrderDto updateStatus(@PathVariable UUID id, @PathVariable OrderEntity.OrderStatus status) {

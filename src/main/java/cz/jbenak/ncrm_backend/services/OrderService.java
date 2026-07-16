@@ -32,7 +32,8 @@ import java.util.UUID;
  * @version 1.0
  * @since 2026-07-11
  * Service for realization of customer orders. Unit prices are snapshotted from the current item price
- * at the time of ordering and the order total is computed server-side.
+ * at the time of ordering and the order total is computed server-side. The customer is notified
+ * by e-mail about a newly created order, an updated order and a change of the order status.
  */
 @Slf4j
 @Service
@@ -51,6 +52,7 @@ public class OrderService {
     private final SalesRepresentativeRepository salesRepresentativeRepository;
     private final ItemRepository itemRepository;
     private final OrderMapper orderMapper;
+    private final OrderEmailService orderEmailService;
 
     @Transactional(readOnly = true)
     public List<OrderDto> findAll() {
@@ -97,7 +99,54 @@ public class OrderService {
         order.setStatus(OrderEntity.OrderStatus.NEW);
         order.setCurrency(request.currency());
         order.setNote(request.note());
+        applyItems(order, request);
+        log.info("Created order {} for customer {} with {} item(s), total {} {}",
+                order.getOrderNumber(), request.customerId(), order.getItems().size(),
+                order.getTotalPrice(), order.getCurrency());
+        OrderEntity saved = orderRepository.save(order);
+        orderEmailService.sendOrderCreated(saved);
+        return orderMapper.toDto(saved);
+    }
 
+    /**
+     * Updates an existing order from the request. The order items are replaced and their unit
+     * prices are snapshotted again from the current item prices. The customer is notified by e-mail.
+     */
+    public OrderDto update(UUID id, OrderRequest request) {
+        OrderEntity order = getOrder(id);
+        order.setCustomer(customerRepository.findById(request.customerId())
+                .orElseThrow(() -> new NotFoundException("Customer", request.customerId())));
+        order.setContactPerson(request.contactPersonId() == null ? null
+                : contactPersonRepository.findById(request.contactPersonId())
+                .orElseThrow(() -> new NotFoundException("ContactPerson", request.contactPersonId())));
+        order.setSalesRepresentative(salesRepresentativeRepository.findById(request.salesRepresentativeId())
+                .orElseThrow(() -> new NotFoundException("SalesRepresentative", request.salesRepresentativeId())));
+        order.setOrderDate(request.orderDate());
+        order.setCurrency(request.currency());
+        order.setNote(request.note());
+        order.getItems().clear();
+        applyItems(order, request);
+        log.info("Updated order {} with {} item(s), total {} {}",
+                order.getOrderNumber(), order.getItems().size(), order.getTotalPrice(), order.getCurrency());
+        OrderEntity saved = orderRepository.save(order);
+        orderEmailService.sendOrderUpdated(saved);
+        return orderMapper.toDto(saved);
+    }
+
+    public OrderDto updateStatus(UUID id, OrderEntity.OrderStatus status) {
+        OrderEntity order = getOrder(id);
+        OrderEntity.OrderStatus previousStatus = order.getStatus();
+        log.info("Changing status of order {} from {} to {}", order.getOrderNumber(), previousStatus, status);
+        order.setStatus(status);
+        OrderEntity saved = orderRepository.save(order);
+        if (previousStatus != status) {
+            orderEmailService.sendOrderStatusChanged(saved, previousStatus);
+        }
+        return orderMapper.toDto(saved);
+    }
+
+    /** Builds the order lines from the request, snapshots the unit prices and computes the total. */
+    private void applyItems(OrderEntity order, OrderRequest request) {
         for (OrderRequest.OrderItemRequest itemRequest : request.items()) {
             ItemEntity item = itemRepository.findById(itemRequest.itemId())
                     .orElseThrow(() -> new NotFoundException("Item", itemRequest.itemId()));
@@ -115,17 +164,6 @@ public class OrderService {
             order.addItem(orderItem);
         }
         order.setTotalPrice(computeTotal(order));
-        log.info("Created order {} for customer {} with {} item(s), total {} {}",
-                order.getOrderNumber(), request.customerId(), order.getItems().size(),
-                order.getTotalPrice(), order.getCurrency());
-        return orderMapper.toDto(orderRepository.save(order));
-    }
-
-    public OrderDto updateStatus(UUID id, OrderEntity.OrderStatus status) {
-        OrderEntity order = getOrder(id);
-        log.info("Changing status of order {} from {} to {}", order.getOrderNumber(), order.getStatus(), status);
-        order.setStatus(status);
-        return orderMapper.toDto(orderRepository.save(order));
     }
 
     /**

@@ -58,6 +58,14 @@ public class ItemEntity extends AuditableEntity {
     @Builder.Default
     private boolean active = true;
 
+    // Image of the item shown by the frontend in the catalogue.
+    @Column(name = "image")
+    @ToString.Exclude
+    private byte[] image;
+
+    @Column(name = "image_content_type", length = 100)
+    private String imageContentType;
+
     @OneToOne(mappedBy = "item", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
     private ItemPriceEntity price;

@@ -20,6 +20,7 @@ public record ItemDto(
         String categoryName,
         String unit,
         boolean active,
+        boolean hasImage,
         ItemPriceDto price
 ) {
 }
