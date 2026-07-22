@@ -6,10 +6,12 @@ import cz.jbenak.ncrm_backend.model.dto.security.RoleDto;
 import cz.jbenak.ncrm_backend.model.dto.security.UserDto;
 import cz.jbenak.ncrm_backend.model.dto.security.UserRequest;
 import cz.jbenak.ncrm_backend.model.entity.company.CompanyEntity;
+import cz.jbenak.ncrm_backend.model.entity.customer.CustomerEntity;
 import cz.jbenak.ncrm_backend.model.entity.security.RoleEntity;
 import cz.jbenak.ncrm_backend.model.entity.security.UserEntity;
 import cz.jbenak.ncrm_backend.model.mapper.UserMapper;
 import cz.jbenak.ncrm_backend.repository.CompanyRepository;
+import cz.jbenak.ncrm_backend.repository.CustomerRepository;
 import cz.jbenak.ncrm_backend.repository.RoleRepository;
 import cz.jbenak.ncrm_backend.repository.SalesRepresentativeRepository;
 import cz.jbenak.ncrm_backend.repository.UserRepository;
@@ -51,11 +53,14 @@ public class UserService {
             "username", "email", "firstName", "lastName", "enabled", "locked",
             "credentialsExpired", "mustChangePassword", "lastLoginAt");
     private static final String NOT_FOUND_TEXT = " not found.";
+    /** Name of the role that allows linking the user account to a customer. */
+    private static final String CUSTOMER_ROLE = "CUSTOMER";
 
     private final UserRepository userRepository;
     private final SalesRepresentativeRepository salesRepresentativeRepository;
     private final RoleRepository roleRepository;
     private final CompanyRepository companyRepository;
+    private final CustomerRepository customerRepository;
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
     private final JavaMailSender mailSender;
@@ -116,6 +121,7 @@ public class UserService {
         entity.setPasswordHash(passwordEncoder.encode(request.password()));
         entity.setRoles(resolveRoles(request.roles()));
         entity.setCompanies(resolveCompanies(request.companyIds()));
+        entity.setCustomer(resolveCustomer(request));
         UserEntity saved = userRepository.save(entity);
         log.info("Created user {} with id {}", request.username(), saved.getId());
         if (request.sendCredentials()) {
@@ -143,6 +149,7 @@ public class UserService {
         }
         entity.setRoles(resolveRoles(request.roles()));
         entity.setCompanies(resolveCompanies(request.companyIds()));
+        entity.setCustomer(resolveCustomer(request));
         log.info("Updating user {} ({})", id, request.username());
         return userMapper.toDto(userRepository.save(entity));
     }
@@ -221,6 +228,22 @@ public class UserService {
                 .map(name -> roleRepository.findByName(name)
                         .orElseThrow(() -> new NotFoundException("Role " + name + NOT_FOUND_TEXT)))
                 .collect(Collectors.toCollection(HashSet::new));
+    }
+
+    /**
+     * Resolves the customer the user account is linked to. A customer may be assigned only
+     * to users having the {@code CUSTOMER} role; {@code null} means "no customer link".
+     */
+    private CustomerEntity resolveCustomer(UserRequest request) {
+        if (request.customerId() == null) {
+            return null;
+        }
+        if (request.roles() == null || !request.roles().contains(CUSTOMER_ROLE)) {
+            throw new IllegalStateException("A customer can only be assigned to a user with the "
+                    + CUSTOMER_ROLE + " role");
+        }
+        return customerRepository.findById(request.customerId())
+                .orElseThrow(() -> new NotFoundException("Customer", request.customerId()));
     }
 
     /** Resolves the own companies the user is assigned to; an empty set means "no restriction". */

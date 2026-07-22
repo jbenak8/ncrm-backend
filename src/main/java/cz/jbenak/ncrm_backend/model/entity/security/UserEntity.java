@@ -2,6 +2,7 @@ package cz.jbenak.ncrm_backend.model.entity.security;
 
 import cz.jbenak.ncrm_backend.model.entity.AuditableEntity;
 import cz.jbenak.ncrm_backend.model.entity.company.CompanyEntity;
+import cz.jbenak.ncrm_backend.model.entity.customer.CustomerEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
@@ -92,4 +93,11 @@ public class UserEntity extends AuditableEntity {
     @ToString.Exclude
     @Builder.Default
     private Set<CompanyEntity> companies = new HashSet<>();
+
+    // Customer the user account belongs to. May be set only for users with the CUSTOMER role
+    // and links the account to the customer whose data the user is allowed to access.
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "customer_id")
+    @ToString.Exclude
+    private CustomerEntity customer;
 }

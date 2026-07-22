@@ -48,6 +48,7 @@ public class InvoiceService {
     private final NumberSequenceService numberSequenceService;
     private final ReportService reportService;
     private final InvoiceEmailService invoiceEmailService;
+    private final InvoiceIsdocService invoiceIsdocService;
 
     @Transactional(readOnly = true)
     public List<InvoiceDto> findAll() {
@@ -138,12 +139,14 @@ public class InvoiceService {
     }
 
     /**
-     * Sends the invoice to the customer by e-mail with the printable PDF attached.
+     * Sends the invoice to the customer by e-mail with the printable PDF and
+     * the machine-readable ISDOC file attached.
      */
     public void sendByEmail(UUID id) {
         InvoiceEntity invoice = getInvoice(id);
         byte[] pdf = reportService.invoicePrintReport(id);
-        invoiceEmailService.sendInvoice(invoice, pdf);
+        byte[] isdoc = invoiceIsdocService.generate(invoice);
+        invoiceEmailService.sendInvoice(invoice, pdf, isdoc);
     }
 
     InvoiceEntity getInvoice(UUID id) {

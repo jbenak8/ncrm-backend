@@ -36,7 +36,7 @@ import static org.mockito.Mockito.when;
  * Unit tests of {@link InvoiceService} verifying issuing invoices for completed orders:
  * status and duplicity validations, VAT computation from the item price snapshots,
  * due date resolution by the payment type, the variable symbol derivation and sending
- * the invoice by e-mail with the printable PDF.
+ * the invoice by e-mail with the printable PDF and the ISDOC file.
  */
 @ExtendWith(MockitoExtension.class)
 class InvoiceServiceTest {
@@ -53,6 +53,8 @@ class InvoiceServiceTest {
     private ReportService reportService;
     @Mock
     private InvoiceEmailService invoiceEmailService;
+    @Mock
+    private InvoiceIsdocService invoiceIsdocService;
 
     @InjectMocks
     private InvoiceService invoiceService;
@@ -156,17 +158,19 @@ class InvoiceServiceTest {
     }
 
     @Test
-    void sendByEmailAttachesPdf() {
+    void sendByEmailAttachesPdfAndIsdoc() {
         UUID invoiceId = UUID.randomUUID();
         InvoiceEntity invoice = new InvoiceEntity();
         invoice.setInvoiceNumber("2026-000042");
         when(invoiceRepository.findById(invoiceId)).thenReturn(Optional.of(invoice));
         byte[] pdf = {1, 2, 3};
         when(reportService.invoicePrintReport(invoiceId)).thenReturn(pdf);
+        byte[] isdoc = {4, 5, 6};
+        when(invoiceIsdocService.generate(invoice)).thenReturn(isdoc);
 
         invoiceService.sendByEmail(invoiceId);
 
-        verify(invoiceEmailService).sendInvoice(invoice, pdf);
+        verify(invoiceEmailService).sendInvoice(invoice, pdf, isdoc);
     }
 
     @Test

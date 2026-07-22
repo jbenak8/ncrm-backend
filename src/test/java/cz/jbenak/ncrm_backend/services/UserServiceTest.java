@@ -4,10 +4,12 @@ import cz.jbenak.ncrm_backend.model.dto.security.ChangePasswordRequest;
 import cz.jbenak.ncrm_backend.model.dto.security.UserDto;
 import cz.jbenak.ncrm_backend.model.dto.security.UserRequest;
 import cz.jbenak.ncrm_backend.model.entity.company.SalesRepresentativeEntity;
+import cz.jbenak.ncrm_backend.model.entity.customer.CustomerEntity;
 import cz.jbenak.ncrm_backend.model.entity.security.RoleEntity;
 import cz.jbenak.ncrm_backend.model.entity.security.UserEntity;
 import cz.jbenak.ncrm_backend.model.mapper.UserMapper;
 import cz.jbenak.ncrm_backend.repository.CompanyRepository;
+import cz.jbenak.ncrm_backend.repository.CustomerRepository;
 import cz.jbenak.ncrm_backend.repository.RoleRepository;
 import cz.jbenak.ncrm_backend.repository.SalesRepresentativeRepository;
 import cz.jbenak.ncrm_backend.repository.UserRepository;
@@ -48,6 +50,8 @@ class UserServiceTest {
     private RoleRepository roleRepository;
     @Mock
     private CompanyRepository companyRepository;
+    @Mock
+    private CustomerRepository customerRepository;
     @Mock
     private UserMapper userMapper;
     @Mock
@@ -142,7 +146,12 @@ class UserServiceTest {
 
     private UserRequest userRequest(String password) {
         return new UserRequest("john", "john@example.com", password, "John", "Doe", true, false, false, false,
-                Set.of("OWNER"), null);
+                Set.of("OWNER"), null, null);
+    }
+
+    private UserRequest customerUserRequest(Set<String> roles, UUID customerId) {
+        return new UserRequest("john", "john@example.com", "Secret.Password1", "John", "Doe", true, false, false,
+                false, roles, null, customerId);
     }
 
     @Test
@@ -162,6 +171,82 @@ class UserServiceTest {
         verify(userRepository).save(captor.capture());
         assertThat(captor.getValue().getPasswordHash()).isEqualTo("hash");
         assertThat(captor.getValue().getRoles()).containsExactly(role);
+    }
+
+    @Test
+    void createAssignsCustomerToUserWithCustomerRole() {
+        UUID customerId = UUID.randomUUID();
+        CustomerEntity customer = new CustomerEntity();
+        customer.setId(customerId);
+        when(userRepository.existsByUsername("john")).thenReturn(false);
+        when(userRepository.existsByEmail("john@example.com")).thenReturn(false);
+        when(userMapper.toEntity(any(UserRequest.class))).thenReturn(new UserEntity());
+        when(passwordEncoder.encode("Secret.Password1")).thenReturn("hash");
+        RoleEntity role = new RoleEntity();
+        role.setName("CUSTOMER");
+        when(roleRepository.findByName("CUSTOMER")).thenReturn(Optional.of(role));
+        when(customerRepository.findById(customerId)).thenReturn(Optional.of(customer));
+        when(userRepository.save(any(UserEntity.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        userService.create(customerUserRequest(Set.of("CUSTOMER"), customerId));
+
+        ArgumentCaptor<UserEntity> captor = ArgumentCaptor.forClass(UserEntity.class);
+        verify(userRepository).save(captor.capture());
+        assertThat(captor.getValue().getCustomer()).isEqualTo(customer);
+    }
+
+    @Test
+    void createRejectsCustomerWithoutCustomerRole() {
+        when(userRepository.existsByUsername("john")).thenReturn(false);
+        when(userRepository.existsByEmail("john@example.com")).thenReturn(false);
+        when(userMapper.toEntity(any(UserRequest.class))).thenReturn(new UserEntity());
+        when(passwordEncoder.encode("Secret.Password1")).thenReturn("hash");
+        RoleEntity role = new RoleEntity();
+        role.setName("OWNER");
+        when(roleRepository.findByName("OWNER")).thenReturn(Optional.of(role));
+
+        UserRequest request = customerUserRequest(Set.of("OWNER"), UUID.randomUUID());
+        assertThatThrownBy(() -> userService.create(request))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("CUSTOMER");
+        verify(userRepository, never()).save(any(UserEntity.class));
+    }
+
+    @Test
+    void createRejectsUnknownCustomer() {
+        UUID customerId = UUID.randomUUID();
+        when(userRepository.existsByUsername("john")).thenReturn(false);
+        when(userRepository.existsByEmail("john@example.com")).thenReturn(false);
+        when(userMapper.toEntity(any(UserRequest.class))).thenReturn(new UserEntity());
+        when(passwordEncoder.encode("Secret.Password1")).thenReturn("hash");
+        RoleEntity role = new RoleEntity();
+        role.setName("CUSTOMER");
+        when(roleRepository.findByName("CUSTOMER")).thenReturn(Optional.of(role));
+        when(customerRepository.findById(customerId)).thenReturn(Optional.empty());
+
+        UserRequest request = customerUserRequest(Set.of("CUSTOMER"), customerId);
+        assertThatThrownBy(() -> userService.create(request))
+                .isInstanceOf(NotFoundException.class);
+        verify(userRepository, never()).save(any(UserEntity.class));
+    }
+
+    @Test
+    void updateClearsCustomerWhenNotProvided() {
+        UUID id = UUID.randomUUID();
+        UserEntity entity = new UserEntity();
+        entity.setId(id);
+        entity.setCustomer(new CustomerEntity());
+        when(userRepository.findById(id)).thenReturn(Optional.of(entity));
+        when(userRepository.findByUsername("john")).thenReturn(Optional.empty());
+        when(userRepository.findByEmail("john@example.com")).thenReturn(Optional.empty());
+        RoleEntity role = new RoleEntity();
+        role.setName("OWNER");
+        when(roleRepository.findByName("OWNER")).thenReturn(Optional.of(role));
+        when(userRepository.save(entity)).thenReturn(entity);
+
+        userService.update(id, userRequest(null));
+
+        assertThat(entity.getCustomer()).isNull();
     }
 
     @Test

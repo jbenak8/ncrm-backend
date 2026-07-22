@@ -28,7 +28,7 @@ import static org.mockito.Mockito.verify;
 
 /**
  * Unit tests of {@link InvoiceEmailService}: recipient resolution, e-mail content
- * with the PDF attachment and error propagation to the caller.
+ * with the PDF and ISDOC attachments and error propagation to the caller.
  */
 @ExtendWith(MockitoExtension.class)
 class InvoiceEmailServiceTest {
@@ -48,7 +48,7 @@ class InvoiceEmailServiceTest {
         MimeMessage message = new MimeMessage((Session) null);
         when(mailSender.createMimeMessage()).thenReturn(message);
 
-        invoiceEmailService.sendInvoice(invoice, new byte[]{1, 2, 3});
+        invoiceEmailService.sendInvoice(invoice, new byte[]{1, 2, 3}, new byte[]{4, 5, 6});
 
         ArgumentCaptor<MimeMessage> captor = ArgumentCaptor.forClass(MimeMessage.class);
         verify(mailSender).send(captor.capture());
@@ -63,11 +63,40 @@ class InvoiceEmailServiceTest {
         MimeMessage message = new MimeMessage((Session) null);
         when(mailSender.createMimeMessage()).thenReturn(message);
 
-        invoiceEmailService.sendInvoice(invoice, new byte[]{1});
+        invoiceEmailService.sendInvoice(invoice, new byte[]{1}, new byte[]{2});
 
         ArgumentCaptor<MimeMessage> captor = ArgumentCaptor.forClass(MimeMessage.class);
         verify(mailSender).send(captor.capture());
         assertThat(captor.getValue().getAllRecipients()[0]).hasToString("customer@acme.cz");
+    }
+
+    @Test
+    void sendInvoiceAttachesPdfAndIsdoc() throws Exception {
+        InvoiceEntity invoice = invoice();
+        MimeMessage message = new MimeMessage((Session) null);
+        when(mailSender.createMimeMessage()).thenReturn(message);
+
+        invoiceEmailService.sendInvoice(invoice, new byte[]{1}, new byte[]{2});
+
+        ArgumentCaptor<MimeMessage> captor = ArgumentCaptor.forClass(MimeMessage.class);
+        verify(mailSender).send(captor.capture());
+        assertThat(attachmentNames(captor.getValue()))
+                .contains("faktura-2026-000042.pdf", "faktura-2026-000042.isdoc");
+    }
+
+    @Test
+    void sendInvoiceOmitsIsdocAttachmentWhenNotProvided() throws Exception {
+        InvoiceEntity invoice = invoice();
+        MimeMessage message = new MimeMessage((Session) null);
+        when(mailSender.createMimeMessage()).thenReturn(message);
+
+        invoiceEmailService.sendInvoice(invoice, new byte[]{1}, null);
+
+        ArgumentCaptor<MimeMessage> captor = ArgumentCaptor.forClass(MimeMessage.class);
+        verify(mailSender).send(captor.capture());
+        assertThat(attachmentNames(captor.getValue()))
+                .contains("faktura-2026-000042.pdf")
+                .doesNotContain("faktura-2026-000042.isdoc");
     }
 
     @Test
@@ -76,7 +105,7 @@ class InvoiceEmailServiceTest {
         MimeMessage message = new MimeMessage((Session) null);
         when(mailSender.createMimeMessage()).thenReturn(message);
 
-        invoiceEmailService.sendInvoice(invoice, new byte[]{1});
+        invoiceEmailService.sendInvoice(invoice, new byte[]{1}, new byte[]{2});
 
         ArgumentCaptor<MimeMessage> captor = ArgumentCaptor.forClass(MimeMessage.class);
         verify(mailSender).send(captor.capture());
@@ -95,7 +124,7 @@ class InvoiceEmailServiceTest {
         MimeMessage message = new MimeMessage((Session) null);
         when(mailSender.createMimeMessage()).thenReturn(message);
 
-        invoiceEmailService.sendInvoice(invoice, new byte[]{1});
+        invoiceEmailService.sendInvoice(invoice, new byte[]{1}, new byte[]{2});
 
         ArgumentCaptor<MimeMessage> captor = ArgumentCaptor.forClass(MimeMessage.class);
         verify(mailSender).send(captor.capture());
@@ -108,7 +137,7 @@ class InvoiceEmailServiceTest {
         InvoiceEntity invoice = invoice();
         invoice.getOrder().getCustomer().setEmail(null);
 
-        assertThatThrownBy(() -> invoiceEmailService.sendInvoice(invoice, new byte[]{1}))
+        assertThatThrownBy(() -> invoiceEmailService.sendInvoice(invoice, new byte[]{1}, new byte[]{2}))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("no customer e-mail");
     }
@@ -118,7 +147,7 @@ class InvoiceEmailServiceTest {
         InvoiceEntity invoice = invoice();
         invoice.setOrder(null);
 
-        assertThatThrownBy(() -> invoiceEmailService.sendInvoice(invoice, new byte[]{1}))
+        assertThatThrownBy(() -> invoiceEmailService.sendInvoice(invoice, new byte[]{1}, new byte[]{2}))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("no customer e-mail");
     }
@@ -130,7 +159,7 @@ class InvoiceEmailServiceTest {
         when(mailSender.createMimeMessage()).thenReturn(message);
         doThrow(new MailSendException("SMTP down")).when(mailSender).send(any(MimeMessage.class));
 
-        assertThatThrownBy(() -> invoiceEmailService.sendInvoice(invoice, new byte[]{1}))
+        assertThatThrownBy(() -> invoiceEmailService.sendInvoice(invoice, new byte[]{1}, new byte[]{2}))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Failed to send invoice");
     }
@@ -150,6 +179,27 @@ class InvoiceEmailServiceTest {
         invoice.setTotalGross(new BigDecimal("121.00"));
         invoice.setCurrency("CZK");
         return invoice;
+    }
+
+    private java.util.List<String> attachmentNames(MimeMessage message) throws Exception {
+        java.util.List<String> names = new java.util.ArrayList<>();
+        Object content = message.getContent();
+        if (content instanceof jakarta.mail.Multipart multipart) {
+            collectAttachmentNames(multipart, names);
+        }
+        return names;
+    }
+
+    private void collectAttachmentNames(jakarta.mail.Multipart multipart, java.util.List<String> names) throws Exception {
+        for (int i = 0; i < multipart.getCount(); i++) {
+            var bodyPart = multipart.getBodyPart(i);
+            if (bodyPart.getFileName() != null) {
+                names.add(bodyPart.getFileName());
+            }
+            if (bodyPart.getContent() instanceof jakarta.mail.Multipart nested) {
+                collectAttachmentNames(nested, names);
+            }
+        }
     }
 
     private String extractHtml(MimeMessage message) throws Exception {

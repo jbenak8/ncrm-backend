@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 public interface UserMapper {
 
     @Mapping(target = "companyIds", source = "companies")
+    @Mapping(target = "customerId", source = "customer.id")
     UserDto toDto(UserEntity entity);
 
     List<UserDto> toDtoList(List<UserEntity> entities);
@@ -44,11 +45,12 @@ public interface UserMapper {
 
     List<SalesRepresentativeDto> toRepresentativeDtoList(List<SalesRepresentativeEntity> entities);
 
-    // The password hash, roles and assigned companies are resolved by the service; audit and login metadata are managed elsewhere.
+    // The password hash, roles, assigned companies and customer are resolved by the service; audit and login metadata are managed elsewhere.
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "passwordHash", ignore = true)
     @Mapping(target = "roles", ignore = true)
     @Mapping(target = "companies", ignore = true)
+    @Mapping(target = "customer", ignore = true)
     @Mapping(target = "credentialsExpired", ignore = true)
     @Mapping(target = "lastLoginAt", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
@@ -59,6 +61,7 @@ public interface UserMapper {
     @Mapping(target = "passwordHash", ignore = true)
     @Mapping(target = "roles", ignore = true)
     @Mapping(target = "companies", ignore = true)
+    @Mapping(target = "customer", ignore = true)
     @Mapping(target = "credentialsExpired", ignore = true)
     @Mapping(target = "lastLoginAt", ignore = true)
     @Mapping(target = "createdAt", ignore = true)

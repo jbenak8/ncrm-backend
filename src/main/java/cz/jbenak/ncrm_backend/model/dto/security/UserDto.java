@@ -22,6 +22,7 @@ public record UserDto(
         boolean mustChangePassword,
         LocalDateTime lastLoginAt,
         Set<String> roles,
-        Set<UUID> companyIds
+        Set<UUID> companyIds,
+        UUID customerId
 ) {
 }

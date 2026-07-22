@@ -25,6 +25,7 @@ public record UserRequest(
         boolean mustChangePassword,
         boolean sendCredentials,
         Set<String> roles,
-        Set<UUID> companyIds
+        Set<UUID> companyIds,
+        UUID customerId
 ) {
 }

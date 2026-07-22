@@ -15,7 +15,8 @@ import java.time.format.DateTimeFormatter;
  * @author Jan Benák
  * @version 1.0
  * @since 2026-07-16
- * Sends the issued invoice to the customer by e-mail with the printable PDF attached.
+ * Sends the issued invoice to the customer by e-mail with the printable PDF and the
+ * machine-readable ISDOC file attached.
  * The recipient is the order contact person, or the customer's own e-mail address when
  * no contact person (or their e-mail) is available. Unlike the order notifications, a failure
  * to send the invoice is propagated to the caller, because the invoice dispatch is requested
@@ -31,8 +32,8 @@ public class InvoiceEmailService {
 
     private final JavaMailSender mailSender;
 
-    /** Sends the invoice with the PDF attachment to the customer. */
-    public void sendInvoice(InvoiceEntity invoice, byte[] pdf) {
+    /** Sends the invoice with the PDF and ISDOC attachments to the customer. */
+    public void sendInvoice(InvoiceEntity invoice, byte[] pdf, byte[] isdoc) {
         String recipient = resolveRecipient(invoice.getOrder());
         if (recipient == null) {
             throw new IllegalStateException("Invoice " + invoice.getInvoiceNumber()
@@ -46,6 +47,10 @@ public class InvoiceEmailService {
             helper.setText(buildBody(invoice), true);
             helper.addAttachment("faktura-" + invoice.getInvoiceNumber() + ".pdf",
                     new ByteArrayResource(pdf), "application/pdf");
+            if (isdoc != null && isdoc.length > 0) {
+                helper.addAttachment("faktura-" + invoice.getInvoiceNumber() + ".isdoc",
+                        new ByteArrayResource(isdoc), "application/x-isdoc");
+            }
             mailSender.send(message);
             log.info("Invoice {} sent to {}", invoice.getInvoiceNumber(), recipient);
         } catch (Exception e) {
