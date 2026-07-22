@@ -7,6 +7,7 @@ import cz.jbenak.ncrm_backend.model.entity.company.SalesRepresentativeEntity;
 import cz.jbenak.ncrm_backend.model.entity.security.RoleEntity;
 import cz.jbenak.ncrm_backend.model.entity.security.UserEntity;
 import cz.jbenak.ncrm_backend.model.mapper.UserMapper;
+import cz.jbenak.ncrm_backend.repository.CompanyRepository;
 import cz.jbenak.ncrm_backend.repository.RoleRepository;
 import cz.jbenak.ncrm_backend.repository.SalesRepresentativeRepository;
 import cz.jbenak.ncrm_backend.repository.UserRepository;
@@ -45,6 +46,8 @@ class UserServiceTest {
     private SalesRepresentativeRepository salesRepresentativeRepository;
     @Mock
     private RoleRepository roleRepository;
+    @Mock
+    private CompanyRepository companyRepository;
     @Mock
     private UserMapper userMapper;
     @Mock
@@ -139,7 +142,7 @@ class UserServiceTest {
 
     private UserRequest userRequest(String password) {
         return new UserRequest("john", "john@example.com", password, "John", "Doe", true, false, false, false,
-                Set.of("OWNER"));
+                Set.of("OWNER"), null);
     }
 
     @Test

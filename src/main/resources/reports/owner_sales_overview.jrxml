@@ -40,4 +40,13 @@
             </element>
         </band>
     </detail>
+
+    <pageFooter height="20">
+        <element kind="textField" x="335" y="0" width="160" height="14" hTextAlign="Right">
+            <expression><![CDATA["Strana " + $V{PAGE_NUMBER} + " z"]]></expression>
+        </element>
+        <element kind="textField" x="495" y="0" width="40" height="14" evaluationTime="Report">
+            <expression><![CDATA[" " + $V{PAGE_NUMBER}]]></expression>
+        </element>
+    </pageFooter>
 </jasperReport>

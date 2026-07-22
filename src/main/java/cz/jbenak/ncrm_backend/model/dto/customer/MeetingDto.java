@@ -15,6 +15,8 @@ public record MeetingDto(
         UUID id,
         UUID customerId,
         String customerName,
+        UUID companyId,
+        String companyName,
         UUID contactPersonId,
         String contactPersonName,
         UUID salesRepresentativeId,

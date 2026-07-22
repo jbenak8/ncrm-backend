@@ -1,0 +1,10 @@
+databaseChangeLog:
+
+  - changeSet:
+      id: 010-01-item-purchase-price
+      author: jbenak
+      changes:
+        - addColumn:
+            tableName: item_prices
+            columns:
+              - column: { name: purchase_price_net, type: "numeric(12, 2)" }

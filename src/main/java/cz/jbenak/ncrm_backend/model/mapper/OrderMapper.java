@@ -22,6 +22,8 @@ public interface OrderMapper {
 
     @Mapping(target = "customerId", source = "customer.id")
     @Mapping(target = "customerName", source = "customer.name")
+    @Mapping(target = "companyId", source = "company.id")
+    @Mapping(target = "companyName", source = "company.name")
     @Mapping(target = "contactPersonId", source = "contactPerson.id")
     @Mapping(target = "contactPersonName",
             expression = "java(entity.getContactPerson() == null ? null : entity.getContactPerson().getFirstName() + \" \" + entity.getContactPerson().getLastName())")

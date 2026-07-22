@@ -30,10 +30,14 @@ public class CompanyController {
 
     private final CompanyService companyService;
 
+    // Sales representatives may list the companies as well (scoped to their assignment)
+    // so that the frontend can filter the dashboard data by the active company.
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER')")
-    public List<CompanyDto> findAll() {
-        return companyService.findAll();
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'SALES_REPRESENTATIVE')")
+    public List<CompanyDto> findAll(Authentication authentication) {
+        boolean admin = authentication.getAuthorities().stream()
+                .anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
+        return companyService.findAllForUser(authentication.getName(), admin);
     }
 
     @GetMapping("/{id}")
@@ -75,7 +79,7 @@ public class CompanyController {
     }
 
     @GetMapping("/{id}/logo")
-    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'SALES_REPRESENTATIVE')")
     public ResponseEntity<byte[]> getLogo(@PathVariable UUID id) {
         CompanyLogoDto logo = companyService.getLogo(id);
         return ResponseEntity.ok()

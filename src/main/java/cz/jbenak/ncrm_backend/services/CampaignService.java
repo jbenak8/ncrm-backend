@@ -4,11 +4,13 @@ import cz.jbenak.ncrm_backend.ai.AiService;
 import cz.jbenak.ncrm_backend.model.dto.ai.AiDtos;
 import cz.jbenak.ncrm_backend.model.dto.marketing.CampaignDto;
 import cz.jbenak.ncrm_backend.model.dto.marketing.CampaignRequest;
+import cz.jbenak.ncrm_backend.model.entity.company.CompanyEntity;
 import cz.jbenak.ncrm_backend.model.entity.customer.CustomerEntity;
 import cz.jbenak.ncrm_backend.model.entity.marketing.CampaignEntity;
 import cz.jbenak.ncrm_backend.model.entity.marketing.CampaignRecipientEntity;
 import cz.jbenak.ncrm_backend.model.mapper.CampaignMapper;
 import cz.jbenak.ncrm_backend.repository.CampaignRepository;
+import cz.jbenak.ncrm_backend.repository.CompanyRepository;
 import cz.jbenak.ncrm_backend.repository.CustomerRepository;
 import cz.jbenak.ncrm_backend.repository.UserRepository;
 import cz.jbenak.ncrm_backend.search.SearchSpecificationBuilder;
@@ -50,9 +52,11 @@ public class CampaignService {
 
     /** Attribute paths of the campaign entity that can be used by the generic search API. */
     private static final Set<String> SEARCHABLE_FIELDS = Set.of(
-            "name", "subject", "contentSource", "status", "scheduledAt", "sentAt", "createdBy.username");
+            "name", "subject", "contentSource", "status", "scheduledAt", "sentAt",
+            "company.id", "company.name", "createdBy.username");
 
     private final CampaignRepository campaignRepository;
+    private final CompanyRepository companyRepository;
     private final CustomerRepository customerRepository;
     private final UserRepository userRepository;
     private final CampaignMapper campaignMapper;
@@ -91,6 +95,7 @@ public class CampaignService {
                 .body(request.body())
                 .contentSource(request.contentSource() == null ? CampaignEntity.ContentSource.MANUAL : request.contentSource())
                 .scheduledAt(request.scheduledAt())
+                .company(resolveCompany(request.companyId()))
                 .build();
         if (createdByUsername != null) {
             userRepository.findByUsername(createdByUsername).ifPresent(campaign::setCreatedBy);
@@ -179,5 +184,17 @@ public class CampaignService {
 
     private CampaignEntity getCampaign(UUID id) {
         return campaignRepository.findById(id).orElseThrow(() -> new NotFoundException("Campaign", id));
+    }
+
+    /**
+     * Resolves the own company sending the campaign: the explicitly requested one when given,
+     * otherwise the default company (may be null when no default company is defined).
+     */
+    private CompanyEntity resolveCompany(UUID companyId) {
+        if (companyId != null) {
+            return companyRepository.findById(companyId)
+                    .orElseThrow(() -> new NotFoundException("Company", companyId));
+        }
+        return companyRepository.findByDefaultCompanyTrueAndDeletedFalse().orElse(null);
     }
 }

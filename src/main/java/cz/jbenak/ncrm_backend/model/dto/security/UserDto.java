@@ -21,6 +21,7 @@ public record UserDto(
         boolean credentialsExpired,
         boolean mustChangePassword,
         LocalDateTime lastLoginAt,
-        Set<String> roles
+        Set<String> roles,
+        Set<UUID> companyIds
 ) {
 }

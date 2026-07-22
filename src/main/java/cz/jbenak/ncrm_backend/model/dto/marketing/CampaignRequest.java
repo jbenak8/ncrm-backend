@@ -20,6 +20,7 @@ public record CampaignRequest(
         @NotBlank String subject,
         @NotBlank String body,
         CampaignEntity.ContentSource contentSource,
+        UUID companyId,
         LocalDateTime scheduledAt,
         @NotEmpty List<UUID> customerIds
 ) {

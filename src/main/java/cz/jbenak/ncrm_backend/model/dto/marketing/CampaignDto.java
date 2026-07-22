@@ -20,6 +20,8 @@ public record CampaignDto(
         String body,
         CampaignEntity.ContentSource contentSource,
         CampaignEntity.CampaignStatus status,
+        UUID companyId,
+        String companyName,
         UUID createdById,
         String createdByName,
         LocalDateTime scheduledAt,

@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * @author Jan Benák
@@ -23,6 +24,7 @@ public record UserRequest(
         boolean locked,
         boolean mustChangePassword,
         boolean sendCredentials,
-        Set<String> roles
+        Set<String> roles,
+        Set<UUID> companyIds
 ) {
 }

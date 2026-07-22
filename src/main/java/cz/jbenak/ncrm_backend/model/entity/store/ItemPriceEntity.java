@@ -42,6 +42,10 @@ public class ItemPriceEntity {
     @Column(name = "currency", nullable = false, length = 3)
     private String currency;
 
+    // Purchase price of the item excluding VAT.
+    @Column(name = "purchase_price_net", precision = 12, scale = 2)
+    private BigDecimal purchasePriceNet;
+
     @Column(name = "vat_rate", precision = 5, scale = 2)
     private BigDecimal vatRate;
 

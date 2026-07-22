@@ -3,10 +3,14 @@ package cz.jbenak.ncrm_backend.services;
 import cz.jbenak.ncrm_backend.model.dto.order.OrderDto;
 import cz.jbenak.ncrm_backend.model.dto.order.OrderRequest;
 import cz.jbenak.ncrm_backend.model.entity.NumberSequenceEntity;
+import cz.jbenak.ncrm_backend.model.entity.company.CompanyEntity;
 import cz.jbenak.ncrm_backend.model.entity.order.OrderEntity;
 import cz.jbenak.ncrm_backend.model.entity.order.OrderItemEntity;
+import cz.jbenak.ncrm_backend.model.entity.quotation.QuotationEntity;
+import cz.jbenak.ncrm_backend.model.entity.quotation.QuotationItemEntity;
 import cz.jbenak.ncrm_backend.model.entity.store.ItemEntity;
 import cz.jbenak.ncrm_backend.model.mapper.OrderMapper;
+import cz.jbenak.ncrm_backend.repository.CompanyRepository;
 import cz.jbenak.ncrm_backend.repository.ContactPersonRepository;
 import cz.jbenak.ncrm_backend.repository.CustomerRepository;
 import cz.jbenak.ncrm_backend.repository.ItemRepository;
@@ -45,10 +49,12 @@ public class OrderService {
     /** Attribute paths of the order entity that can be used by the generic search API. */
     private static final Set<String> SEARCHABLE_FIELDS = Set.of(
             "orderNumber", "orderDate", "status", "totalPrice", "currency", "note",
-            "customer.id", "customer.name", "salesRepresentative.id", "salesRepresentative.code");
+            "customer.id", "customer.name", "company.id", "company.name",
+            "salesRepresentative.id", "salesRepresentative.code");
 
     private final OrderRepository orderRepository;
     private final CustomerRepository customerRepository;
+    private final CompanyRepository companyRepository;
     private final ContactPersonRepository contactPersonRepository;
     private final SalesRepresentativeRepository salesRepresentativeRepository;
     private final ItemRepository itemRepository;
@@ -92,6 +98,7 @@ public class OrderService {
         order.setOrderNumber(generateOrderNumber());
         order.setCustomer(customerRepository.findById(request.customerId())
                 .orElseThrow(() -> new NotFoundException("Customer", request.customerId())));
+        order.setCompany(resolveCompany(request.companyId()));
         order.setContactPerson(request.contactPersonId() == null ? null
                 : contactPersonRepository.findById(request.contactPersonId())
                 .orElseThrow(() -> new NotFoundException("ContactPerson", request.contactPersonId())));
@@ -111,6 +118,39 @@ public class OrderService {
     }
 
     /**
+     * Creates a new order from an accepted price quotation. Unlike {@link #create(OrderRequest)},
+     * the unit prices are not snapshotted from the current item prices but copied from the
+     * quotation lines, so the customer gets exactly the quoted prices. The customer is notified by e-mail.
+     */
+    public OrderEntity createFromQuotation(QuotationEntity quotation) {
+        OrderEntity order = new OrderEntity();
+        order.setOrderNumber(generateOrderNumber());
+        order.setCustomer(quotation.getCustomer());
+        order.setCompany(quotation.getCompany());
+        order.setContactPerson(quotation.getContactPerson());
+        order.setSalesRepresentative(quotation.getSalesRepresentative());
+        order.setOrderDate(LocalDate.now(ZoneId.systemDefault()));
+        order.setStatus(OrderEntity.OrderStatus.NEW);
+        order.setCurrency(quotation.getCurrency());
+        order.setNote(quotation.getNote());
+        for (QuotationItemEntity quotationItem : quotation.getItems()) {
+            OrderItemEntity orderItem = new OrderItemEntity();
+            orderItem.setItem(quotationItem.getItem());
+            orderItem.setQuantity(quotationItem.getQuantity());
+            orderItem.setUnitPrice(quotationItem.getUnitPrice());
+            orderItem.setTotalPrice(quotationItem.getTotalPrice());
+            order.addItem(orderItem);
+        }
+        order.setTotalPrice(computeTotal(order));
+        log.info("Created order {} from quotation {} with {} item(s), total {} {}",
+                order.getOrderNumber(), quotation.getQuotationNumber(), order.getItems().size(),
+                order.getTotalPrice(), order.getCurrency());
+        OrderEntity saved = orderRepository.save(order);
+        orderEmailService.sendOrderCreated(saved);
+        return saved;
+    }
+
+    /**
      * Updates an existing order from the request. The order items are replaced and their unit
      * prices are snapshotted again from the current item prices. The customer is notified by e-mail.
      */
@@ -118,6 +158,9 @@ public class OrderService {
         OrderEntity order = getOrder(id);
         order.setCustomer(customerRepository.findById(request.customerId())
                 .orElseThrow(() -> new NotFoundException("Customer", request.customerId())));
+        if (request.companyId() != null) {
+            order.setCompany(resolveCompany(request.companyId()));
+        }
         order.setContactPerson(request.contactPersonId() == null ? null
                 : contactPersonRepository.findById(request.contactPersonId())
                 .orElseThrow(() -> new NotFoundException("ContactPerson", request.contactPersonId())));
@@ -175,6 +218,18 @@ public class OrderService {
         return order.getItems().stream()
                 .map(OrderItemEntity::getTotalPrice)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    /**
+     * Resolves the own company issuing the order: the explicitly requested one when given,
+     * otherwise the default company (may be null when no default company is defined).
+     */
+    private CompanyEntity resolveCompany(UUID companyId) {
+        if (companyId != null) {
+            return companyRepository.findById(companyId)
+                    .orElseThrow(() -> new NotFoundException("Company", companyId));
+        }
+        return companyRepository.findByDefaultCompanyTrueAndDeletedFalse().orElse(null);
     }
 
     private OrderEntity getOrder(UUID id) {

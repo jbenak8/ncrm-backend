@@ -209,6 +209,7 @@ class ItemServiceTest {
         assertThat(saved.getPrice()).isNotNull();
         assertThat(saved.getPrice().getPrice()).isEqualByComparingTo("100.00");
         assertThat(saved.getPrice().getCurrency()).isEqualTo("CZK");
+        assertThat(saved.getPrice().getPurchasePriceNet()).isEqualByComparingTo("75.00");
         assertThat(saved.getPrice().getVatRate()).isEqualByComparingTo("21.00");
         assertThat(saved.getPrice().getValidFrom()).isNotNull();
     }
@@ -402,7 +403,8 @@ class ItemServiceTest {
 
     private ItemRequest itemRequest(UUID categoryId) {
         return new ItemRequest("P-01", "Papír A4", "Kancelářský papír", ItemEntity.ItemType.GOODS,
-                categoryId, "ks", true, new BigDecimal("100.00"), "CZK", new BigDecimal("21.00"));
+                categoryId, "ks", true, new BigDecimal("100.00"), "CZK", new BigDecimal("75.00"),
+                new BigDecimal("21.00"));
     }
 
     @Test

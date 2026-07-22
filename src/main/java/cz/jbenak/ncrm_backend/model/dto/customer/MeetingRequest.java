@@ -15,6 +15,7 @@ import java.util.UUID;
  */
 public record MeetingRequest(
         @NotNull UUID customerId,
+        UUID companyId,
         UUID contactPersonId,
         @NotNull UUID salesRepresentativeId,
         UUID customerSiteId,

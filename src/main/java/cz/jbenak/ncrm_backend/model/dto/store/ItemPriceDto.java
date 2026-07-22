@@ -14,6 +14,7 @@ public record ItemPriceDto(
         UUID id,
         BigDecimal price,
         String currency,
+        BigDecimal purchasePriceNet,
         BigDecimal vatRate,
         LocalDateTime validFrom,
         LocalDateTime validTo

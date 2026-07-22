@@ -1,6 +1,7 @@
 package cz.jbenak.ncrm_backend.model.entity.customer;
 
 import cz.jbenak.ncrm_backend.model.entity.AuditableEntity;
+import cz.jbenak.ncrm_backend.model.entity.company.CompanyEntity;
 import cz.jbenak.ncrm_backend.model.entity.company.SalesRepresentativeEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -41,6 +42,12 @@ public class MeetingEntity extends AuditableEntity {
     @JoinColumn(name = "contact_person_id")
     @ToString.Exclude
     private ContactPersonEntity contactPerson;
+
+    // Own company for which the meeting is held.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "company_id")
+    @ToString.Exclude
+    private CompanyEntity company;
 
     // Sales representative who conducts the meeting.
     @ManyToOne(fetch = FetchType.LAZY)

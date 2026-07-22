@@ -5,6 +5,7 @@ import cz.jbenak.ncrm_backend.model.entity.company.SalesRepresentativeEntity;
 import cz.jbenak.ncrm_backend.model.entity.customer.CustomerEntity;
 import cz.jbenak.ncrm_backend.model.entity.customer.MeetingEntity;
 import cz.jbenak.ncrm_backend.model.mapper.MeetingMapper;
+import cz.jbenak.ncrm_backend.repository.CompanyRepository;
 import cz.jbenak.ncrm_backend.repository.ContactPersonRepository;
 import cz.jbenak.ncrm_backend.repository.CustomerRepository;
 import cz.jbenak.ncrm_backend.repository.CustomerSiteRepository;
@@ -41,6 +42,8 @@ class MeetingServiceTest {
     @Mock
     private CustomerRepository customerRepository;
     @Mock
+    private CompanyRepository companyRepository;
+    @Mock
     private ContactPersonRepository contactPersonRepository;
     @Mock
     private CustomerSiteRepository customerSiteRepository;
@@ -58,7 +61,7 @@ class MeetingServiceTest {
     private final UUID repId = UUID.randomUUID();
 
     private MeetingRequest request(MeetingEntity.MeetingStatus status) {
-        return new MeetingRequest(customerId, null, repId, null, "Introduction",
+        return new MeetingRequest(customerId, null, null, repId, null, "Introduction",
                 "First meeting", LocalDateTime.of(2026, Month.JULY, 20, 10, 0), null, status, null);
     }
 

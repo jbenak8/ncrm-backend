@@ -29,11 +29,13 @@ public class NumberSequenceEntity extends AuditableEntity {
      * Enum representing the type of documents numbered by the sequence:
      * - ORDER: customer order numbers.
      * - INVOICE: invoice numbers.
+     * - QUOTATION: price quotation numbers.
      */
     public enum SequenceType {
 
         ORDER,
-        INVOICE
+        INVOICE,
+        QUOTATION
     }
 
     @Id

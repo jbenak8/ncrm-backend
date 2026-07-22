@@ -24,6 +24,8 @@ public interface InvoiceMapper {
     @Mapping(target = "orderNumber", source = "order.orderNumber")
     @Mapping(target = "customerId", source = "order.customer.id")
     @Mapping(target = "customerName", source = "order.customer.name")
+    @Mapping(target = "companyId", source = "order.company.id")
+    @Mapping(target = "companyName", source = "order.company.name")
     InvoiceDto toDto(InvoiceEntity entity);
 
     List<InvoiceDto> toDtoList(List<InvoiceEntity> entities);

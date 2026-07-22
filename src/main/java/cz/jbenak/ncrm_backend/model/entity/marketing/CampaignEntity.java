@@ -1,6 +1,7 @@
 package cz.jbenak.ncrm_backend.model.entity.marketing;
 
 import cz.jbenak.ncrm_backend.model.entity.AuditableEntity;
+import cz.jbenak.ncrm_backend.model.entity.company.CompanyEntity;
 import cz.jbenak.ncrm_backend.model.entity.security.UserEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -55,6 +56,12 @@ public class CampaignEntity extends AuditableEntity {
     @Column(name = "status", nullable = false, length = 20)
     @Builder.Default
     private CampaignStatus status = CampaignStatus.DRAFT;
+
+    // Own company on whose behalf the campaign is sent.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "company_id")
+    @ToString.Exclude
+    private CompanyEntity company;
 
     // User (owner or marketing specialist) who created the campaign.
     @ManyToOne(fetch = FetchType.LAZY)

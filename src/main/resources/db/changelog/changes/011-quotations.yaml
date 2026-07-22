@@ -1,0 +1,43 @@
+databaseChangeLog:
+
+  - changeSet:
+      id: 011-01-quotations
+      author: jbenak
+      changes:
+        - createTable:
+            tableName: quotations
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: quotation_number, type: varchar(50), constraints: { nullable: false, unique: true, uniqueConstraintName: uc_quotations_quotation_number } }
+              - column: { name: customer_id, type: uuid, constraints: { nullable: false, foreignKeyName: fk_quotations_customer, references: customers(id) } }
+              - column: { name: company_id, type: uuid, constraints: { foreignKeyName: fk_quotations_company, references: companies(id) } }
+              - column: { name: contact_person_id, type: uuid, constraints: { foreignKeyName: fk_quotations_contact_person, references: contact_persons(id) } }
+              - column: { name: sales_representative_id, type: uuid, constraints: { nullable: false, foreignKeyName: fk_quotations_sales_representative, references: sales_representatives(id) } }
+              - column: { name: quotation_date, type: date, constraints: { nullable: false } }
+              - column: { name: valid_until, type: date }
+              - column: { name: status, type: varchar(20), constraints: { nullable: false } }
+              - column: { name: total_price, type: 'decimal(14,2)' }
+              - column: { name: currency, type: varchar(3) }
+              - column: { name: note, type: varchar(255) }
+              - column: { name: order_id, type: uuid, constraints: { foreignKeyName: fk_quotations_order, references: orders(id) } }
+              - column: { name: created_at, type: timestamp, defaultValueComputed: CURRENT_TIMESTAMP, constraints: { nullable: false } }
+              - column: { name: updated_at, type: timestamp }
+
+  - changeSet:
+      id: 011-02-quotation-items
+      author: jbenak
+      changes:
+        - createTable:
+            tableName: quotation_items
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: quotation_id, type: uuid, constraints: { nullable: false, foreignKeyName: fk_quotation_items_quotation, references: quotations(id) } }
+              - column: { name: item_id, type: uuid, constraints: { nullable: false, foreignKeyName: fk_quotation_items_item, references: items(id) } }
+              - column: { name: quantity, type: 'decimal(12,3)', constraints: { nullable: false } }
+              - column: { name: unit_price, type: 'decimal(12,2)', constraints: { nullable: false } }
+              - column: { name: total_price, type: 'decimal(14,2)' }
+        - createIndex:
+            tableName: quotation_items
+            indexName: ix_quotation_items_quotation_id
+            columns:
+              - column: { name: quotation_id }

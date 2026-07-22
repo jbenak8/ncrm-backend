@@ -13,3 +13,11 @@ databaseChangeLog:
       file: db/changelog/changes/006-number-sequences.yaml
   - include:
       file: db/changelog/changes/007-invoices.yaml
+  - include:
+      file: db/changelog/changes/008-order-company.yaml
+  - include:
+      file: db/changelog/changes/009-company-scoping.yaml
+  - include:
+      file: db/changelog/changes/010-item-purchase-price.yaml
+  - include:
+      file: db/changelog/changes/011-quotations.yaml

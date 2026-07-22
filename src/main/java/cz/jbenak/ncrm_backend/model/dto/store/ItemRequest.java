@@ -24,6 +24,7 @@ public record ItemRequest(
         boolean active,
         @NotNull @DecimalMin("0.00") BigDecimal price,
         @NotBlank String currency,
+        @DecimalMin("0.00") BigDecimal purchasePriceNet,
         BigDecimal vatRate
 ) {
 }

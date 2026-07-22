@@ -1,6 +1,7 @@
 package cz.jbenak.ncrm_backend.model.entity.security;
 
 import cz.jbenak.ncrm_backend.model.entity.AuditableEntity;
+import cz.jbenak.ncrm_backend.model.entity.company.CompanyEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
@@ -80,4 +81,15 @@ public class UserEntity extends AuditableEntity {
     @ToString.Exclude
     @Builder.Default
     private Set<RoleEntity> roles = new HashSet<>();
+
+    // Own companies the user (owner, sales representative) is assigned to. An empty set
+    // means the user is not restricted and sees the data of all companies.
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(name = "user_companies",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "company_id"),
+            uniqueConstraints = @UniqueConstraint(name = "uc_user_companies", columnNames = {"user_id", "company_id"}))
+    @ToString.Exclude
+    @Builder.Default
+    private Set<CompanyEntity> companies = new HashSet<>();
 }

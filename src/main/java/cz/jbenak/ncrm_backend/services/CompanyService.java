@@ -9,6 +9,7 @@ import cz.jbenak.ncrm_backend.model.mapper.AddressMapper;
 import cz.jbenak.ncrm_backend.model.mapper.CompanyMapper;
 import cz.jbenak.ncrm_backend.repository.CompanyRepository;
 import cz.jbenak.ncrm_backend.repository.CountryRepository;
+import cz.jbenak.ncrm_backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -19,6 +20,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -42,12 +44,32 @@ public class CompanyService {
 
     private final CompanyRepository companyRepository;
     private final CountryRepository countryRepository;
+    private final UserRepository userRepository;
     private final CompanyMapper companyMapper;
     private final AddressMapper addressMapper;
 
     @Transactional(readOnly = true)
     public List<CompanyDto> findAll() {
         return companyMapper.toDtoList(companyRepository.findAllByDeletedFalse());
+    }
+
+    /**
+     * Lists the companies visible to the given user. Administrators (and users without an
+     * explicit assignment) see all companies, other users only the companies they are assigned to.
+     */
+    @Transactional(readOnly = true)
+    public List<CompanyDto> findAllForUser(String username, boolean unrestricted) {
+        if (unrestricted || username == null) {
+            return findAll();
+        }
+        return userRepository.findByUsername(username)
+                .map(user -> user.getCompanies().stream()
+                        .filter(company -> !company.isDeleted())
+                        .sorted(Comparator.comparing(CompanyEntity::getName, String.CASE_INSENSITIVE_ORDER))
+                        .toList())
+                .filter(companies -> !companies.isEmpty())
+                .map(companyMapper::toDtoList)
+                .orElseGet(this::findAll);
     }
 
     @Transactional(readOnly = true)

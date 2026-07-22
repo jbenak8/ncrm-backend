@@ -2,8 +2,10 @@ package cz.jbenak.ncrm_backend.services;
 
 import cz.jbenak.ncrm_backend.model.dto.customer.MeetingDto;
 import cz.jbenak.ncrm_backend.model.dto.customer.MeetingRequest;
+import cz.jbenak.ncrm_backend.model.entity.company.CompanyEntity;
 import cz.jbenak.ncrm_backend.model.entity.customer.MeetingEntity;
 import cz.jbenak.ncrm_backend.model.mapper.MeetingMapper;
+import cz.jbenak.ncrm_backend.repository.CompanyRepository;
 import cz.jbenak.ncrm_backend.repository.ContactPersonRepository;
 import cz.jbenak.ncrm_backend.repository.CustomerRepository;
 import cz.jbenak.ncrm_backend.repository.CustomerSiteRepository;
@@ -38,10 +40,12 @@ public class MeetingService {
     /** Attribute paths of the meeting entity that can be used by the generic search API. */
     private static final Set<String> SEARCHABLE_FIELDS = Set.of(
             "subject", "description", "plannedDate", "actualDate", "status", "outcome",
-            "customer.id", "customer.name", "salesRepresentative.id", "salesRepresentative.code");
+            "customer.id", "customer.name", "company.id", "company.name",
+            "salesRepresentative.id", "salesRepresentative.code");
 
     private final MeetingRepository meetingRepository;
     private final CustomerRepository customerRepository;
+    private final CompanyRepository companyRepository;
     private final ContactPersonRepository contactPersonRepository;
     private final CustomerSiteRepository customerSiteRepository;
     private final SalesRepresentativeRepository salesRepresentativeRepository;
@@ -122,9 +126,24 @@ public class MeetingService {
         return meetingRepository.findById(id).orElseThrow(() -> new NotFoundException("Meeting", id));
     }
 
+    /**
+     * Resolves the own company the meeting is held for: the explicitly requested one when given,
+     * otherwise the default company (may be null when no default company is defined).
+     */
+    private CompanyEntity resolveCompany(UUID companyId) {
+        if (companyId != null) {
+            return companyRepository.findById(companyId)
+                    .orElseThrow(() -> new NotFoundException("Company", companyId));
+        }
+        return companyRepository.findByDefaultCompanyTrueAndDeletedFalse().orElse(null);
+    }
+
     private void applyRequest(MeetingEntity entity, MeetingRequest request) {
         entity.setCustomer(customerRepository.findById(request.customerId())
                 .orElseThrow(() -> new NotFoundException("Customer", request.customerId())));
+        if (request.companyId() != null || entity.getCompany() == null) {
+            entity.setCompany(resolveCompany(request.companyId()));
+        }
         entity.setSalesRepresentative(salesRepresentativeRepository.findById(request.salesRepresentativeId())
                 .orElseThrow(() -> new NotFoundException("SalesRepresentative", request.salesRepresentativeId())));
         entity.setContactPerson(request.contactPersonId() == null ? null

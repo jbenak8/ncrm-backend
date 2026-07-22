@@ -60,16 +60,37 @@ class CompanyControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "OWNER")
+    @WithMockUser(username = "owner", roles = "OWNER")
     void ownerCanListCompanies() throws Exception {
-        when(companyService.findAll()).thenReturn(List.of());
+        when(companyService.findAllForUser("owner", false)).thenReturn(List.of());
         mockMvc.perform(get("/api/companies"))
                 .andExpect(status().isOk());
+        verify(companyService).findAllForUser("owner", false);
     }
 
     @Test
-    @WithMockUser(roles = "SALES_REPRESENTATIVE")
-    void salesRepresentativeCannotListCompanies() throws Exception {
+    @WithMockUser(username = "admin", roles = "ADMIN")
+    void adminListsAllCompanies() throws Exception {
+        when(companyService.findAllForUser("admin", true)).thenReturn(List.of());
+        mockMvc.perform(get("/api/companies"))
+                .andExpect(status().isOk());
+        verify(companyService).findAllForUser("admin", true);
+    }
+
+    // Sales representatives may list the companies (scoped to their assignment) so that
+    // the frontend can filter the dashboard data by the active company.
+    @Test
+    @WithMockUser(username = "rep", roles = "SALES_REPRESENTATIVE")
+    void salesRepresentativeCanListAssignedCompanies() throws Exception {
+        when(companyService.findAllForUser("rep", false)).thenReturn(List.of());
+        mockMvc.perform(get("/api/companies"))
+                .andExpect(status().isOk());
+        verify(companyService).findAllForUser("rep", false);
+    }
+
+    @Test
+    @WithMockUser(roles = "CUSTOMER")
+    void customerCannotListCompanies() throws Exception {
         mockMvc.perform(get("/api/companies"))
                 .andExpect(status().isForbidden());
     }

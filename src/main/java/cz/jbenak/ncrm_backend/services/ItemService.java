@@ -274,6 +274,7 @@ public class ItemService {
         }
         price.setPrice(request.price());
         price.setCurrency(request.currency());
+        price.setPurchasePriceNet(request.purchasePriceNet());
         price.setVatRate(request.vatRate());
     }
 

@@ -1,13 +1,13 @@
 # Multi-stage build of the nCRM backend.
 # Stage 1: build with Maven; Stage 2: minimal JRE runtime running as a non-root user.
-FROM maven:3-eclipse-temurin-25 AS build
+FROM maven:3-eclipse-temurin-26 AS build
 WORKDIR /build
 COPY pom.xml .
 RUN mvn -q dependency:go-offline
 COPY src ./src
 RUN mvn -q package -DskipTests
 
-FROM eclipse-temurin:25-jre
+FROM eclipse-temurin:26-jdk
 WORKDIR /app
 RUN useradd --system --uid 1001 ncrm
 COPY --from=build /build/target/*.jar app.jar

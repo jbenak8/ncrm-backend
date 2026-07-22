@@ -5,9 +5,11 @@ import cz.jbenak.ncrm_backend.model.dto.security.ChangePasswordRequest;
 import cz.jbenak.ncrm_backend.model.dto.security.RoleDto;
 import cz.jbenak.ncrm_backend.model.dto.security.UserDto;
 import cz.jbenak.ncrm_backend.model.dto.security.UserRequest;
+import cz.jbenak.ncrm_backend.model.entity.company.CompanyEntity;
 import cz.jbenak.ncrm_backend.model.entity.security.RoleEntity;
 import cz.jbenak.ncrm_backend.model.entity.security.UserEntity;
 import cz.jbenak.ncrm_backend.model.mapper.UserMapper;
+import cz.jbenak.ncrm_backend.repository.CompanyRepository;
 import cz.jbenak.ncrm_backend.repository.RoleRepository;
 import cz.jbenak.ncrm_backend.repository.SalesRepresentativeRepository;
 import cz.jbenak.ncrm_backend.repository.UserRepository;
@@ -53,6 +55,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final SalesRepresentativeRepository salesRepresentativeRepository;
     private final RoleRepository roleRepository;
+    private final CompanyRepository companyRepository;
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
     private final JavaMailSender mailSender;
@@ -112,6 +115,7 @@ public class UserService {
         UserEntity entity = userMapper.toEntity(request);
         entity.setPasswordHash(passwordEncoder.encode(request.password()));
         entity.setRoles(resolveRoles(request.roles()));
+        entity.setCompanies(resolveCompanies(request.companyIds()));
         UserEntity saved = userRepository.save(entity);
         log.info("Created user {} with id {}", request.username(), saved.getId());
         if (request.sendCredentials()) {
@@ -138,6 +142,7 @@ public class UserService {
             entity.setPasswordHash(passwordEncoder.encode(request.password()));
         }
         entity.setRoles(resolveRoles(request.roles()));
+        entity.setCompanies(resolveCompanies(request.companyIds()));
         log.info("Updating user {} ({})", id, request.username());
         return userMapper.toDto(userRepository.save(entity));
     }
@@ -215,6 +220,14 @@ public class UserService {
         return roleNames == null ? new HashSet<>() : roleNames.stream()
                 .map(name -> roleRepository.findByName(name)
                         .orElseThrow(() -> new NotFoundException("Role " + name + NOT_FOUND_TEXT)))
+                .collect(Collectors.toCollection(HashSet::new));
+    }
+
+    /** Resolves the own companies the user is assigned to; an empty set means "no restriction". */
+    private Set<CompanyEntity> resolveCompanies(Set<UUID> companyIds) {
+        return companyIds == null ? new HashSet<>() : companyIds.stream()
+                .map(companyId -> companyRepository.findById(companyId)
+                        .orElseThrow(() -> new NotFoundException("Company", companyId)))
                 .collect(Collectors.toCollection(HashSet::new));
     }
 }

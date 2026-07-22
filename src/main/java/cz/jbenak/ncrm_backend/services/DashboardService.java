@@ -84,7 +84,10 @@ public class DashboardService {
                         CampaignEntity.CampaignStatus.SCHEDULED,
                         CampaignEntity.CampaignStatus.SENDING)).stream()
                 .map(c -> new DashboardDtos.ActiveCampaign(c.getId(), c.getName(), c.getSubject(),
-                        c.getStatus().name(), c.getScheduledAt(), c.getRecipients().size()))
+                        c.getStatus().name(),
+                        c.getCompany() == null ? null : c.getCompany().getId(),
+                        c.getCompany() == null ? null : c.getCompany().getName(),
+                        c.getScheduledAt(), c.getRecipients().size()))
                 .toList();
     }
 

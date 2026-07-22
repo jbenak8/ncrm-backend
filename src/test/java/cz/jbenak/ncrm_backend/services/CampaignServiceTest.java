@@ -8,6 +8,7 @@ import cz.jbenak.ncrm_backend.model.entity.marketing.CampaignEntity;
 import cz.jbenak.ncrm_backend.model.entity.marketing.CampaignRecipientEntity;
 import cz.jbenak.ncrm_backend.model.mapper.CampaignMapper;
 import cz.jbenak.ncrm_backend.repository.CampaignRepository;
+import cz.jbenak.ncrm_backend.repository.CompanyRepository;
 import cz.jbenak.ncrm_backend.repository.CustomerRepository;
 import cz.jbenak.ncrm_backend.repository.UserRepository;
 import jakarta.mail.Session;
@@ -44,6 +45,8 @@ class CampaignServiceTest {
     @Mock
     private CampaignRepository campaignRepository;
     @Mock
+    private CompanyRepository companyRepository;
+    @Mock
     private CustomerRepository customerRepository;
     @Mock
     private UserRepository userRepository;
@@ -73,7 +76,7 @@ class CampaignServiceTest {
         when(campaignRepository.save(any(CampaignEntity.class))).thenAnswer(inv -> inv.getArgument(0));
 
         campaignService.create(new CampaignRequest("Summer", "Sale", "<p>Hi</p>",
-                null, null, List.of(withEmail, withoutEmail)), null);
+                null, null, null, List.of(withEmail, withoutEmail)), null);
 
         ArgumentCaptor<CampaignEntity> captor = ArgumentCaptor.forClass(CampaignEntity.class);
         verify(campaignRepository).save(captor.capture());
@@ -89,7 +92,7 @@ class CampaignServiceTest {
         when(customerRepository.findById(customerId)).thenReturn(Optional.of(customer(" ")));
 
         CampaignRequest request = new CampaignRequest("Summer", "Sale", "body",
-                null, null, List.of(customerId));
+                null, null, null, List.of(customerId));
         assertThatThrownBy(() -> campaignService.create(request, null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("no recipients");
@@ -101,7 +104,7 @@ class CampaignServiceTest {
         when(customerRepository.findById(customerId)).thenReturn(Optional.empty());
 
         CampaignRequest request = new CampaignRequest("Summer", "Sale", "body",
-                null, null, List.of(customerId));
+                null, null, null, List.of(customerId));
         assertThatThrownBy(() -> campaignService.create(request, "owner"))
                 .isInstanceOf(NotFoundException.class);
     }

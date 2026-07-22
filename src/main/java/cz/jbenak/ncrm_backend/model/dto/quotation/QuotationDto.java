@@ -1,6 +1,6 @@
-package cz.jbenak.ncrm_backend.model.dto.order;
+package cz.jbenak.ncrm_backend.model.dto.quotation;
 
-import cz.jbenak.ncrm_backend.model.entity.order.OrderEntity;
+import cz.jbenak.ncrm_backend.model.entity.quotation.QuotationEntity;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -10,12 +10,12 @@ import java.util.UUID;
 /**
  * @author Jan Benák
  * @version 1.0
- * @since 2026-07-11
- * DTO representing a customer order with its items, exposed to the React frontend.
+ * @since 2026-07-22
+ * DTO representing a price quotation with its items, exposed to the React frontend.
  */
-public record OrderDto(
+public record QuotationDto(
         UUID id,
-        String orderNumber,
+        String quotationNumber,
         UUID customerId,
         String customerName,
         UUID companyId,
@@ -24,11 +24,14 @@ public record OrderDto(
         String contactPersonName,
         UUID salesRepresentativeId,
         String salesRepresentativeName,
-        LocalDate orderDate,
-        OrderEntity.OrderStatus status,
+        LocalDate quotationDate,
+        LocalDate validUntil,
+        QuotationEntity.QuotationStatus status,
         BigDecimal totalPrice,
         String currency,
         String note,
-        List<OrderItemDto> items
+        UUID orderId,
+        String orderNumber,
+        List<QuotationItemDto> items
 ) {
 }

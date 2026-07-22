@@ -63,6 +63,8 @@ public final class DashboardDtos {
             String name,
             String subject,
             String status,
+            UUID companyId,
+            String companyName,
             LocalDateTime scheduledAt,
             long recipientCount
     ) {

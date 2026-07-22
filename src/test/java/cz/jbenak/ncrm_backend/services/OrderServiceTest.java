@@ -8,6 +8,7 @@ import cz.jbenak.ncrm_backend.model.entity.order.OrderItemEntity;
 import cz.jbenak.ncrm_backend.model.entity.store.ItemEntity;
 import cz.jbenak.ncrm_backend.model.entity.store.ItemPriceEntity;
 import cz.jbenak.ncrm_backend.model.mapper.OrderMapper;
+import cz.jbenak.ncrm_backend.repository.CompanyRepository;
 import cz.jbenak.ncrm_backend.repository.ContactPersonRepository;
 import cz.jbenak.ncrm_backend.repository.CustomerRepository;
 import cz.jbenak.ncrm_backend.repository.ItemRepository;
@@ -46,6 +47,8 @@ class OrderServiceTest {
     private OrderRepository orderRepository;
     @Mock
     private CustomerRepository customerRepository;
+    @Mock
+    private CompanyRepository companyRepository;
     @Mock
     private ContactPersonRepository contactPersonRepository;
     @Mock
@@ -90,7 +93,7 @@ class OrderServiceTest {
         when(itemRepository.findById(itemId)).thenReturn(Optional.of(item));
         when(orderRepository.save(any(OrderEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        OrderRequest request = new OrderRequest(customerId, null, repId, LocalDate.now(), null, null,
+        OrderRequest request = new OrderRequest(customerId, null, null, repId, LocalDate.now(), null, null,
                 List.of(new OrderRequest.OrderItemRequest(itemId, new BigDecimal("3"))));
         orderService.create(request);
 
@@ -130,7 +133,7 @@ class OrderServiceTest {
         when(itemRepository.findById(itemId)).thenReturn(Optional.of(item));
         when(orderRepository.save(any(OrderEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        OrderRequest request = new OrderRequest(customerId, null, repId, LocalDate.now(), null, null,
+        OrderRequest request = new OrderRequest(customerId, null, null, repId, LocalDate.now(), null, null,
                 List.of(new OrderRequest.OrderItemRequest(itemId, new BigDecimal("2"))));
         orderService.update(orderId, request);
 
@@ -181,7 +184,7 @@ class OrderServiceTest {
         item.setCode("NO-PRICE");
         when(itemRepository.findById(itemId)).thenReturn(Optional.of(item));
 
-        OrderRequest request = new OrderRequest(customerId, null, repId, LocalDate.now(), null, null,
+        OrderRequest request = new OrderRequest(customerId, null, null, repId, LocalDate.now(), null, null,
                 List.of(new OrderRequest.OrderItemRequest(itemId, BigDecimal.ONE)));
 
         assertThatThrownBy(() -> orderService.create(request))

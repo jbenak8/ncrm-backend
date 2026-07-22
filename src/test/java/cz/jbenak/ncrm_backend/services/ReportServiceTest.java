@@ -80,10 +80,10 @@ class ReportServiceTest {
     void customerOrdersReportProducesPdf() {
         UUID customerId = UUID.randomUUID();
         when(orderService.findByCustomer(customerId)).thenReturn(List.of(
-                new OrderDto(UUID.randomUUID(), "ORD-1", customerId, "ACME", null, null,
+                new OrderDto(UUID.randomUUID(), "ORD-1", customerId, "ACME", null, null, null, null,
                         null, null, LocalDate.of(2026, Month.JULY, 1), OrderEntity.OrderStatus.NEW,
                         new BigDecimal("123.45"), "CZK", null, List.of()),
-                new OrderDto(UUID.randomUUID(), "ORD-2", customerId, "ACME", null, null,
+                new OrderDto(UUID.randomUUID(), "ORD-2", customerId, "ACME", null, null, null, null,
                         null, null, null, null, new BigDecimal("50"), "CZK", null, List.of())));
 
         assertIsPdf(reportService.customerOrdersReport(customerId));
@@ -140,6 +140,36 @@ class ReportServiceTest {
         when(companyRepository.findByDefaultCompanyTrueAndDeletedFalse()).thenReturn(Optional.of(company()));
 
         assertIsPdf(reportService.invoicePrintReport(invoiceId));
+    }
+
+    @Test
+    void invoicePrintReportProducesPdfWithCompanyLogo() throws Exception {
+        UUID invoiceId = UUID.randomUUID();
+        CompanyEntity company = company();
+        company.setLogo(pngLogo());
+        company.setLogoContentType("image/png");
+        when(invoiceRepository.findById(invoiceId)).thenReturn(Optional.of(invoice(InvoiceEntity.PaymentType.TRANSFER)));
+        when(companyRepository.findByDefaultCompanyTrueAndDeletedFalse()).thenReturn(Optional.of(company));
+
+        assertIsPdf(reportService.invoicePrintReport(invoiceId));
+    }
+
+    @Test
+    void invoicePrintReportProducesPdfWhenLogoIsUnreadable() {
+        UUID invoiceId = UUID.randomUUID();
+        CompanyEntity company = company();
+        company.setLogo(new byte[]{1, 2, 3});
+        when(invoiceRepository.findById(invoiceId)).thenReturn(Optional.of(invoice(InvoiceEntity.PaymentType.TRANSFER)));
+        when(companyRepository.findByDefaultCompanyTrueAndDeletedFalse()).thenReturn(Optional.of(company));
+
+        assertIsPdf(reportService.invoicePrintReport(invoiceId));
+    }
+
+    private static byte[] pngLogo() throws Exception {
+        java.awt.image.BufferedImage image = new java.awt.image.BufferedImage(40, 20, java.awt.image.BufferedImage.TYPE_INT_RGB);
+        java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+        javax.imageio.ImageIO.write(image, "png", out);
+        return out.toByteArray();
     }
 
     @Test

@@ -110,7 +110,7 @@ public class ReportService {
                     row.put("orderDate", order.orderDate() == null ? null : order.orderDate().toString());
                     row.put("status", order.status() == null ? null : order.status().name());
                     row.put("totalPrice", order.totalPrice());
-                    row.put("currency", order.currency());
+                    row.put("currency", currencySymbol(order.currency()));
                     return row;
                 })
                 .toList();
@@ -143,7 +143,7 @@ public class ReportService {
         params.put("ORDER_DATE", order.getOrderDate() == null ? null : order.getOrderDate().format(DATE_FORMAT));
         params.put("STATUS", order.getStatus() == null ? null
                 : STATUS_LABELS.getOrDefault(order.getStatus(), order.getStatus().name()));
-        params.put("CURRENCY", order.getCurrency());
+        params.put("CURRENCY", currencySymbol(order.getCurrency()));
         params.put("NOTE", order.getNote());
         params.put("TOTAL_PRICE", order.getTotalPrice());
         params.put("SALES_REPRESENTATIVE", resolveSalesRepresentativeName(order));
@@ -187,7 +187,7 @@ public class ReportService {
                 ? "Hotově" : "Převodem");
         params.put("VARIABLE_SYMBOL",
                 invoice.getPaymentType() == InvoiceEntity.PaymentType.TRANSFER ? invoice.getVariableSymbol() : null);
-        params.put("CURRENCY", invoice.getCurrency());
+        params.put("CURRENCY", currencySymbol(invoice.getCurrency()));
         params.put("NOTE", invoice.getNote());
         params.put("TOTAL_NET", invoice.getTotalNet());
         params.put("TOTAL_VAT", invoice.getTotalVat());
@@ -238,6 +238,7 @@ public class ReportService {
         if (company == null) {
             return;
         }
+        params.put("SUPPLIER_LOGO", readSupplierLogo(company));
         params.put("SUPPLIER_NAME", company.getNameSecondLine() == null
                 ? company.getName() : company.getName() + " " + company.getNameSecondLine());
         params.put("SUPPLIER_ADDRESS", formatAddress(company.getAddress()));
@@ -246,6 +247,19 @@ public class ReportService {
         params.put("SUPPLIER_CONTACT", joinNonBlank(" | ", company.getEmail(), company.getPhone()));
         params.put("SUPPLIER_BANK", company.getBankAccount());
         params.put("SUPPLIER_IBAN", company.getIban());
+    }
+
+    /** Company logo stored in the database decoded to an AWT image (or {@code null} when missing/unreadable). */
+    private java.awt.Image readSupplierLogo(CompanyEntity company) {
+        if (company.getLogo() == null || company.getLogo().length == 0) {
+            return null;
+        }
+        try {
+            return javax.imageio.ImageIO.read(new java.io.ByteArrayInputStream(company.getLogo()));
+        } catch (Exception e) {
+            log.warn("Could not read logo of company {} for the report", company.getId(), e);
+            return null;
+        }
     }
 
     private void fillCustomerParams(Map<String, Object> params, OrderEntity order) {
@@ -274,13 +288,18 @@ public class ReportService {
         return name == null ? representative.getCode() : name;
     }
 
+    /**
+     * Formats the address as "Street houseNumber/streetNumber, zip city" where the house number
+     * is the Czech "číslo popisné" and the street number the "číslo orientační" (when present).
+     */
     private String formatAddress(AddressEntity address) {
         if (address == null) {
             return null;
         }
-        String street = isNotBlank(address.getStreetNumber())
-                ? address.getStreetNumber()
-                : joinNonBlank(" ", address.getStreet(), address.getHouseNumber());
+        String numbers = isNotBlank(address.getHouseNumber()) && isNotBlank(address.getStreetNumber())
+                ? address.getHouseNumber() + "/" + address.getStreetNumber()
+                : isNotBlank(address.getHouseNumber()) ? address.getHouseNumber() : address.getStreetNumber();
+        String street = joinNonBlank(" ", address.getStreet(), numbers);
         return joinNonBlank(", ", street, joinNonBlank(" ", address.getZipCode(), address.getCity()));
     }
 
@@ -297,6 +316,24 @@ public class ReportService {
 
     private boolean isNotBlank(String value) {
         return value != null && !value.isBlank();
+    }
+
+    /**
+     * Converts the ISO 4217 currency code to the local currency symbol shown on the printed
+     * documents (e.g. "CZK" -> "Kč", "EUR" -> "€"). Falls back to the original code when
+     * the symbol is unknown.
+     */
+    private String currencySymbol(String currencyCode) {
+        if (!isNotBlank(currencyCode)) {
+            return currencyCode;
+        }
+        try {
+            return java.util.Currency.getInstance(currencyCode.trim().toUpperCase(java.util.Locale.ROOT))
+                    .getSymbol(new java.util.Locale("cs", "CZ"));
+        } catch (IllegalArgumentException e) {
+            log.warn("Unknown currency code '{}', using it as-is on the report", currencyCode);
+            return currencyCode;
+        }
     }
 
     private byte[] exportPdf(String templatePath, Map<String, Object> params, List<Map<String, ?>> data) {

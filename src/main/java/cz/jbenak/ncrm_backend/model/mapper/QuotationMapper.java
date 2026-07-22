@@ -1,8 +1,10 @@
 package cz.jbenak.ncrm_backend.model.mapper;
 
 import cz.jbenak.ncrm_backend.configuration.MapstructConfig;
-import cz.jbenak.ncrm_backend.model.dto.customer.MeetingDto;
-import cz.jbenak.ncrm_backend.model.entity.customer.MeetingEntity;
+import cz.jbenak.ncrm_backend.model.dto.quotation.QuotationDto;
+import cz.jbenak.ncrm_backend.model.dto.quotation.QuotationItemDto;
+import cz.jbenak.ncrm_backend.model.entity.quotation.QuotationEntity;
+import cz.jbenak.ncrm_backend.model.entity.quotation.QuotationItemEntity;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
@@ -11,12 +13,12 @@ import java.util.List;
 /**
  * @author Jan Benák
  * @version 1.0
- * @since 2026-07-11
- * MapStruct mapper for meetings. Entities are created and updated by the service
- * because all references must be resolved from repositories.
+ * @since 2026-07-22
+ * MapStruct mapper for price quotations and their items. Entities are created by the service
+ * because item prices are resolved server-side.
  */
 @Mapper(config = MapstructConfig.class)
-public interface MeetingMapper {
+public interface QuotationMapper {
 
     @Mapping(target = "customerId", source = "customer.id")
     @Mapping(target = "customerName", source = "customer.name")
@@ -28,9 +30,14 @@ public interface MeetingMapper {
     @Mapping(target = "salesRepresentativeId", source = "salesRepresentative.id")
     @Mapping(target = "salesRepresentativeName",
             expression = "java(entity.getSalesRepresentative() == null ? null : entity.getSalesRepresentative().getUser().getFirstName() + \" \" + entity.getSalesRepresentative().getUser().getLastName())")
-    @Mapping(target = "customerSiteId", source = "customerSite.id")
-    @Mapping(target = "customerSiteName", source = "customerSite.name")
-    MeetingDto toDto(MeetingEntity entity);
+    @Mapping(target = "orderId", source = "order.id")
+    @Mapping(target = "orderNumber", source = "order.orderNumber")
+    QuotationDto toDto(QuotationEntity entity);
 
-    List<MeetingDto> toDtoList(List<MeetingEntity> entities);
+    List<QuotationDto> toDtoList(List<QuotationEntity> entities);
+
+    @Mapping(target = "itemId", source = "item.id")
+    @Mapping(target = "itemCode", source = "item.code")
+    @Mapping(target = "itemName", source = "item.name")
+    QuotationItemDto toDto(QuotationItemEntity entity);
 }

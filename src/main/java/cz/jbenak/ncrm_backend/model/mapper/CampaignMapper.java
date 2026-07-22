@@ -18,6 +18,8 @@ import java.util.List;
 @Mapper(config = MapstructConfig.class)
 public interface CampaignMapper {
 
+    @Mapping(target = "companyId", source = "company.id")
+    @Mapping(target = "companyName", source = "company.name")
     @Mapping(target = "createdById", source = "createdBy.id")
     @Mapping(target = "createdByName",
             expression = "java(entity.getCreatedBy() == null ? null : entity.getCreatedBy().getFirstName() + \" \" + entity.getCreatedBy().getLastName())")

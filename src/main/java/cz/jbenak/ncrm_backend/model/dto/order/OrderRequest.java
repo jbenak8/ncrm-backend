@@ -19,6 +19,8 @@ import java.util.UUID;
  */
 public record OrderRequest(
         @NotNull UUID customerId,
+        // Own company issuing the order; when null, the default company is used.
+        UUID companyId,
         UUID contactPersonId,
         @NotNull UUID salesRepresentativeId,
         @NotNull LocalDate orderDate,

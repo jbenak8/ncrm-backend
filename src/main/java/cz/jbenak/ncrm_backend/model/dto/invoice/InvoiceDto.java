@@ -20,6 +20,8 @@ public record InvoiceDto(
         String orderNumber,
         UUID customerId,
         String customerName,
+        UUID companyId,
+        String companyName,
         InvoiceEntity.PaymentType paymentType,
         LocalDate issueDate,
         LocalDate taxDate,
