@@ -1,0 +1,20 @@
+# Multi-stage build of the nCRM backend for the standalone "db-auth" deployment:
+# database authentication only, no Keycloak / MailHog / PostgreSQL side containers.
+# Stage 1: build with Maven; Stage 2: minimal JRE runtime running as a non-root user.
+FROM maven:3-eclipse-temurin-26 AS build
+WORKDIR /build
+COPY pom.xml .
+RUN mvn -q dependency:go-offline
+COPY src ./src
+RUN mvn -q package -DskipTests
+
+FROM eclipse-temurin:26-jdk
+WORKDIR /app
+RUN useradd --system --uid 1001 ncrm
+COPY --from=build /build/target/*.jar app.jar
+USER 1001
+EXPOSE 8080
+ENV SPRING_PROFILES_ACTIVE=db-auth
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s \
+  CMD curl -fs http://localhost:8080/actuator/health/liveness || exit 1
+ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75", "-jar", "app.jar"]

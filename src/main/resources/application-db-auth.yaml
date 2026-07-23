@@ -1,0 +1,45 @@
+# Database authentication profile: a self-contained alternative to Keycloak. Users log in with the
+# credentials stored in the application database (POST /api/auth/login) and receive an HS256-signed JWT
+# access token; the API then validates these tokens as a resource server using the shared HMAC secret.
+# All secrets are provided via environment variables, restricted actuator exposure.
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://postgres:5432/nCRM}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+  mail:
+    host: ${MAIL_HOST}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+ncrm:
+  security:
+    cors:
+      allowed-origins: ${NCRM_CORS_ALLOWED_ORIGINS}
+    jwt:
+      # Shared secret used to sign and validate the issued access tokens (HS256).
+      # Must be a random string of at least 32 bytes, e.g. generated with "openssl rand -base64 48".
+      secret: ${NCRM_JWT_SECRET}
+      # Validity of the issued access tokens (ISO-8601 duration).
+      ttl: ${NCRM_JWT_TTL:PT1H}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+server:
+  forward-headers-strategy: framework
