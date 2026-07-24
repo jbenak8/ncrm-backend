@@ -1,0 +1,68 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: '@project.name@'
+    version: '@project.version@'
+
+  banner:
+    location: static/banner.txt
+
+  jpa:
+    hibernate:
+      # Liquibase manages the schema; Hibernate only validates that entities match the database.
+      ddl-auto: validate
+
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    hikari:
+      schema: ${DB_SCHEMA}
+
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+  # AI agents (Claude preferred ChatGPT as an alternative); keys are provided via environment variables.
+  ai:
+    anthropic:
+      api-key: ${ANTHROPIC_API_KEY:}
+      chat:
+        model: claude-sonnet-4-5
+    openai:
+      api-key: ${OPENAI_API_KEY:}
+      chat:
+        model: gpt-4o-mini
+
+  mail:
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:25}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    protocol: smtp
+    properties:
+        mail:
+            auth: ${MAIL_SMTP_AUTH}
+            starttls:
+                enable: ${MAIL_SMTP_STARTTLS_ENABLE}
+    test-connection: true
+
+ncrm:
+  security:
+    cors:
+      allowed-origins: ${NCRM_CORS_ALLOWED_ORIGINS:http://localhost:3000}
+  ares:
+    base-url: https://ares.gov.cz/ekonomicke-subjekty-v-be/rest
+
+info:
+  title: nCRM Backend server
+  name: '@project.name@'
+  description: '@project.description@'
+  version: '@project.version@'

@@ -1,0 +1,16 @@
+databaseChangeLog:
+
+  # Optional link of a user account (with the CUSTOMER role) to the customer it belongs to.
+  - changeSet:
+      id: 012-01-user-customer
+      author: jbenak
+      changes:
+        - addColumn:
+            tableName: users
+            columns:
+              - column: { name: customer_id, type: uuid, constraints: { foreignKeyName: fk_users_customer, references: customers(id) } }
+        - createIndex:
+            tableName: users
+            indexName: ix_users_customer_id
+            columns:
+              - column: { name: customer_id }

@@ -1,0 +1,25 @@
+databaseChangeLog:
+
+  - changeSet:
+      id: 004-01-default-admin-user
+      author: jbenak
+      changes:
+        - insert:
+            tableName: users
+            columns:
+              - column: { name: id, value: 6f1f9a67-2f4e-4d0c-9c1a-4b8e1a0d7c11 }
+              - column: { name: username, value: admin }
+              - column: { name: email, value: admin@ncrm.local }
+              # BCrypt hash of the default password "admin"; must be changed on first login.
+              - column: { name: password_hash, value: $2a$10$84XRvcg0HahVS0Rbjk88wOE3aF2xhpeCoSGVuz8Uo8yKmwI.HRLge }
+              - column: { name: first_name, value: Default }
+              - column: { name: last_name, value: Administrator }
+              - column: { name: enabled, valueBoolean: true }
+              - column: { name: must_change_password, valueBoolean: true }
+              - column: { name: locked, valueBoolean: false }
+              - column: { name: credentials_expired, valueBoolean: false }
+        - insert:
+            tableName: user_roles
+            columns:
+              - column: { name: user_id, value: 6f1f9a67-2f4e-4d0c-9c1a-4b8e1a0d7c11 }
+              - column: { name: role_id, valueComputed: (SELECT id FROM roles WHERE name = 'ADMIN') }

@@ -1,0 +1,44 @@
+# Production profile: OAuth2 resource server backed by Keycloak (which also brokers Google, Bank ID, ...),
+# all secrets provided via environment variables, restricted actuator exposure.
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://postgres:5432/nCRM}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Keycloak realm issuer, e.g. https://keycloak.example.com/realms/ncrm
+          issuer-uri: ${KEYCLOAK_ISSUER_URI}
+
+  mail:
+    host: ${MAIL_HOST}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+ncrm:
+  security:
+    cors:
+      allowed-origins: ${NCRM_CORS_ALLOWED_ORIGINS}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+server:
+  forward-headers-strategy: framework

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Owner report: sales overview aggregated by month (order count and revenue). JasperReports 7 format. -->
+<jasperReport name="owner_sales_overview" language="java" pageWidth="595" pageHeight="842" columnWidth="535"
+              leftMargin="30" rightMargin="30" topMargin="30" bottomMargin="30">
+
+    <parameter name="REPORT_TITLE" class="java.lang.String"/>
+
+    <field name="month" class="java.lang.String"/>
+    <field name="orderCount" class="java.lang.Long"/>
+    <field name="revenue" class="java.math.BigDecimal"/>
+
+    <title height="40">
+        <element kind="textField" x="0" y="0" width="535" height="30" fontSize="18.0" bold="true">
+            <expression><![CDATA[$P{REPORT_TITLE}]]></expression>
+        </element>
+    </title>
+
+    <columnHeader height="20">
+        <element kind="staticText" x="0" y="0" width="150" height="20" bold="true">
+            <text><![CDATA[Month]]></text>
+        </element>
+        <element kind="staticText" x="150" y="0" width="150" height="20" bold="true">
+            <text><![CDATA[Orders]]></text>
+        </element>
+        <element kind="staticText" x="300" y="0" width="235" height="20" bold="true">
+            <text><![CDATA[Revenue]]></text>
+        </element>
+    </columnHeader>
+
+    <detail>
+        <band height="20">
+            <element kind="textField" x="0" y="0" width="150" height="20">
+                <expression><![CDATA[$F{month}]]></expression>
+            </element>
+            <element kind="textField" x="150" y="0" width="150" height="20">
+                <expression><![CDATA[$F{orderCount}]]></expression>
+            </element>
+            <element kind="textField" x="300" y="0" width="235" height="20" pattern="#,##0.00">
+                <expression><![CDATA[$F{revenue}]]></expression>
+            </element>
+        </band>
+    </detail>
+
+    <pageFooter height="20">
+        <element kind="textField" x="335" y="0" width="160" height="14" hTextAlign="Right">
+            <expression><![CDATA["Strana " + $V{PAGE_NUMBER} + " z"]]></expression>
+        </element>
+        <element kind="textField" x="495" y="0" width="40" height="14" evaluationTime="Report">
+            <expression><![CDATA[" " + $V{PAGE_NUMBER}]]></expression>
+        </element>
+    </pageFooter>
+</jasperReport>

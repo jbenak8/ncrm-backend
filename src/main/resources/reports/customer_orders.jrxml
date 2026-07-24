@@ -1,0 +1,58 @@
+<!-- Created with Jaspersoft Studio version 7.0.6.final using JasperReports Library version 7.0.6-5d2a603fdc6b3db8f842a83383e594f41891534d  -->
+<jasperReport name="customer_orders" language="java" pageWidth="595" pageHeight="842" columnWidth="535" leftMargin="30" rightMargin="30" topMargin="30" bottomMargin="30" uuid="788a25c7-63c6-4703-bdb3-0cdeccde8e6f">
+	<parameter name="REPORT_TITLE" class="java.lang.String"/>
+	<field name="orderNumber" class="java.lang.String"/>
+	<field name="orderDate" class="java.lang.String"/>
+	<field name="status" class="java.lang.String"/>
+	<field name="totalPrice" class="java.math.BigDecimal"/>
+	<field name="currency" class="java.lang.String"/>
+	<title height="40">
+		<element kind="textField" uuid="de2ce204-5d56-48cf-bdf4-6bb9fd34d852" x="0" y="0" width="535" height="30" fontSize="18.0" bold="true">
+			<expression><![CDATA[$P{REPORT_TITLE}]]></expression>
+		</element>
+	</title>
+	<columnHeader height="20">
+		<element kind="staticText" uuid="bb5a33e8-5604-4a17-b1be-f3022973f29b" x="0" y="0" width="160" height="20" bold="true">
+			<text><![CDATA[Číslo objednávky]]></text>
+		</element>
+		<element kind="staticText" uuid="bd51864e-4f6f-4516-b2fc-b80f7a49d304" x="160" y="0" width="100" height="20" bold="true">
+			<text><![CDATA[Datum]]></text>
+		</element>
+		<element kind="staticText" uuid="3e861c56-df73-4b7c-a3a7-268111c53689" x="260" y="0" width="100" height="20" bold="true">
+			<text><![CDATA[Stav]]></text>
+		</element>
+		<element kind="staticText" uuid="df4065b7-3380-4a8e-8c21-f4e6bbb0ea75" x="360" y="0" width="115" height="20" bold="true">
+			<text><![CDATA[Celková částka]]></text>
+		</element>
+		<element kind="staticText" uuid="785f9854-6b93-4b21-abc3-621535a7a62f" x="475" y="0" width="60" height="20" bold="true">
+			<text><![CDATA[Měna]]></text>
+		</element>
+	</columnHeader>
+	<detail>
+		<band height="20">
+			<element kind="textField" uuid="5625f0ce-88d4-49dc-8e05-1d9e5e093155" x="0" y="0" width="160" height="20">
+				<expression><![CDATA[$F{orderNumber}]]></expression>
+			</element>
+			<element kind="textField" uuid="3645e1fd-b0ab-4493-afdd-821fe3523a96" x="160" y="0" width="100" height="20" blankWhenNull="true">
+				<expression><![CDATA[$F{orderDate}]]></expression>
+			</element>
+			<element kind="textField" uuid="39e46f65-e921-4450-92e1-0634ebf8dfe3" x="260" y="0" width="100" height="20" blankWhenNull="true">
+				<expression><![CDATA[$F{status}]]></expression>
+			</element>
+			<element kind="textField" uuid="2c97d30c-6943-4d5d-a0a4-1788ff460809" x="360" y="0" width="115" height="20" pattern="#,##0.00" blankWhenNull="true">
+				<expression><![CDATA[$F{totalPrice}]]></expression>
+			</element>
+			<element kind="textField" uuid="a7831e15-aa3f-468a-97c5-0baa2054db36" x="475" y="0" width="60" height="20" blankWhenNull="true">
+				<expression><![CDATA[$F{currency}]]></expression>
+			</element>
+		</band>
+	</detail>
+	<pageFooter height="20">
+		<element kind="textField" uuid="5e6f7a8b-9c0d-4e1f-a2b3-c4d5e6f7a801" x="335" y="0" width="160" height="14" hTextAlign="Right">
+			<expression><![CDATA["Strana " + $V{PAGE_NUMBER} + " z"]]></expression>
+		</element>
+		<element kind="textField" uuid="5e6f7a8b-9c0d-4e1f-a2b3-c4d5e6f7a802" x="495" y="0" width="40" height="14" evaluationTime="Report">
+			<expression><![CDATA[" " + $V{PAGE_NUMBER}]]></expression>
+		</element>
+	</pageFooter>
+</jasperReport>

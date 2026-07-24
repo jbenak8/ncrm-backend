@@ -1,0 +1,12 @@
+databaseChangeLog:
+
+  # Orders created directly by customer users have no sales representative assigned,
+  # therefore the column must be nullable.
+  - changeSet:
+      id: 013-01-orders-sales-representative-nullable
+      author: jbenak
+      changes:
+        - dropNotNullConstraint:
+            tableName: orders
+            columnName: sales_representative_id
+            columnDataType: uuid

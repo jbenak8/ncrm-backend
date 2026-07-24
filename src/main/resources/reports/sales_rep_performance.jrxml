@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Sales representative report: personal performance (orders, revenue, meetings). JasperReports 7 format. -->
+<jasperReport name="sales_rep_performance" language="java" pageWidth="595" pageHeight="842" columnWidth="535"
+              leftMargin="30" rightMargin="30" topMargin="30" bottomMargin="30">
+
+    <parameter name="REPORT_TITLE" class="java.lang.String"/>
+
+    <field name="name" class="java.lang.String"/>
+    <field name="orderCount" class="java.lang.Long"/>
+    <field name="revenue" class="java.math.BigDecimal"/>
+    <field name="meetingCount" class="java.lang.Long"/>
+
+    <title height="40">
+        <element kind="textField" x="0" y="0" width="535" height="30" fontSize="18.0" bold="true">
+            <expression><![CDATA[$P{REPORT_TITLE}]]></expression>
+        </element>
+    </title>
+
+    <columnHeader height="20">
+        <element kind="staticText" x="0" y="0" width="200" height="20" bold="true">
+            <text><![CDATA[Representative]]></text>
+        </element>
+        <element kind="staticText" x="200" y="0" width="100" height="20" bold="true">
+            <text><![CDATA[Orders]]></text>
+        </element>
+        <element kind="staticText" x="300" y="0" width="135" height="20" bold="true">
+            <text><![CDATA[Revenue]]></text>
+        </element>
+        <element kind="staticText" x="435" y="0" width="100" height="20" bold="true">
+            <text><![CDATA[Meetings]]></text>
+        </element>
+    </columnHeader>
+
+    <detail>
+        <band height="20">
+            <element kind="textField" x="0" y="0" width="200" height="20">
+                <expression><![CDATA[$F{name}]]></expression>
+            </element>
+            <element kind="textField" x="200" y="0" width="100" height="20">
+                <expression><![CDATA[$F{orderCount}]]></expression>
+            </element>
+            <element kind="textField" x="300" y="0" width="135" height="20" pattern="#,##0.00">
+                <expression><![CDATA[$F{revenue}]]></expression>
+            </element>
+            <element kind="textField" x="435" y="0" width="100" height="20">
+                <expression><![CDATA[$F{meetingCount}]]></expression>
+            </element>
+        </band>
+    </detail>
+
+    <pageFooter height="20">
+        <element kind="textField" x="335" y="0" width="160" height="14" hTextAlign="Right">
+            <expression><![CDATA["Strana " + $V{PAGE_NUMBER} + " z"]]></expression>
+        </element>
+        <element kind="textField" x="495" y="0" width="40" height="14" evaluationTime="Report">
+            <expression><![CDATA[" " + $V{PAGE_NUMBER}]]></expression>
+        </element>
+    </pageFooter>
+</jasperReport>

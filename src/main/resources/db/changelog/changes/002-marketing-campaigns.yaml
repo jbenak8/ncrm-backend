@@ -1,0 +1,39 @@
+databaseChangeLog:
+
+  - changeSet:
+      id: 002-01-campaigns
+      author: jbenak
+      changes:
+        - createTable:
+            tableName: campaigns
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: name, type: varchar(255), constraints: { nullable: false } }
+              - column: { name: subject, type: varchar(255), constraints: { nullable: false } }
+              - column: { name: body, type: text, constraints: { nullable: false } }
+              - column: { name: content_source, type: varchar(20), constraints: { nullable: false } }
+              - column: { name: status, type: varchar(20), constraints: { nullable: false } }
+              - column: { name: created_by_id, type: uuid, constraints: { foreignKeyName: fk_campaigns_created_by, references: users(id) } }
+              - column: { name: scheduled_at, type: timestamp }
+              - column: { name: sent_at, type: timestamp }
+              - column: { name: created_at, type: timestamp, defaultValueComputed: CURRENT_TIMESTAMP, constraints: { nullable: false } }
+              - column: { name: updated_at, type: timestamp }
+
+  - changeSet:
+      id: 002-02-campaign-recipients
+      author: jbenak
+      changes:
+        - createTable:
+            tableName: campaign_recipients
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: campaign_id, type: uuid, constraints: { nullable: false, foreignKeyName: fk_campaign_recipients_campaign, references: campaigns(id) } }
+              - column: { name: customer_id, type: uuid, constraints: { nullable: false, foreignKeyName: fk_campaign_recipients_customer, references: customers(id) } }
+              - column: { name: email, type: varchar(255), constraints: { nullable: false } }
+              - column: { name: delivery_status, type: varchar(20), constraints: { nullable: false } }
+              - column: { name: sent_at, type: timestamp }
+              - column: { name: error_message, type: varchar(255) }
+        - addUniqueConstraint:
+            tableName: campaign_recipients
+            columnNames: campaign_id, customer_id
+            constraintName: uc_campaign_recipients

@@ -1,0 +1,11 @@
+databaseChangeLog:
+
+  - changeSet:
+      id: 005-01-item-image
+      author: jbenak
+      changes:
+        - addColumn:
+            tableName: items
+            columns:
+              - column: { name: image, type: bytea }
+              - column: { name: image_content_type, type: varchar(100) }

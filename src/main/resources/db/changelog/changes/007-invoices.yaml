@@ -1,0 +1,48 @@
+databaseChangeLog:
+
+  - changeSet:
+      id: 007-01-invoices
+      author: jbenak
+      changes:
+        - createTable:
+            tableName: invoices
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: invoice_number, type: varchar(50), constraints: { nullable: false, unique: true, uniqueConstraintName: uc_invoices_invoice_number } }
+              - column: { name: order_id, type: uuid, constraints: { nullable: false, unique: true, uniqueConstraintName: uc_invoices_order_id, foreignKeyName: fk_invoices_order, references: orders(id) } }
+              - column: { name: payment_type, type: varchar(20), constraints: { nullable: false } }
+              - column: { name: issue_date, type: date, constraints: { nullable: false } }
+              - column: { name: tax_date, type: date, constraints: { nullable: false } }
+              - column: { name: due_date, type: date, constraints: { nullable: false } }
+              - column: { name: variable_symbol, type: varchar(10) }
+              - column: { name: total_net, type: 'decimal(14,2)' }
+              - column: { name: total_vat, type: 'decimal(14,2)' }
+              - column: { name: total_gross, type: 'decimal(14,2)' }
+              - column: { name: currency, type: varchar(3) }
+              - column: { name: note, type: varchar(255) }
+              - column: { name: created_at, type: timestamp, defaultValueComputed: CURRENT_TIMESTAMP, constraints: { nullable: false } }
+              - column: { name: updated_at, type: timestamp }
+
+  - changeSet:
+      id: 007-02-invoice-items
+      author: jbenak
+      changes:
+        - createTable:
+            tableName: invoice_items
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: invoice_id, type: uuid, constraints: { nullable: false, foreignKeyName: fk_invoice_items_invoice, references: invoices(id) } }
+              - column: { name: item_code, type: varchar(50) }
+              - column: { name: item_name, type: varchar(255), constraints: { nullable: false } }
+              - column: { name: quantity, type: 'decimal(12,3)', constraints: { nullable: false } }
+              - column: { name: unit, type: varchar(20) }
+              - column: { name: unit_price, type: 'decimal(12,2)', constraints: { nullable: false } }
+              - column: { name: vat_rate, type: 'decimal(5,2)' }
+              - column: { name: total_net, type: 'decimal(14,2)' }
+              - column: { name: total_vat, type: 'decimal(14,2)' }
+              - column: { name: total_gross, type: 'decimal(14,2)' }
+        - createIndex:
+            tableName: invoice_items
+            indexName: ix_invoice_items_invoice_id
+            columns:
+              - column: { name: invoice_id }

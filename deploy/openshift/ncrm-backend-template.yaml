@@ -1,0 +1,82 @@
+# OpenShift template for the nCRM backend (DeploymentConfig replaced by Deployment + Route).
+# Process with: oc process -f ncrm-backend-template.yaml -p NAMESPACE=ncrm | oc apply -f -
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: ncrm-backend
+  annotations:
+    description: nCRM backend REST API (Spring Boot)
+parameters:
+  - name: NAMESPACE
+    value: ncrm
+  - name: IMAGE
+    value: image-registry.openshift-image-registry.svc:5000/ncrm/ncrm-backend:latest
+  - name: ROUTE_HOST
+    value: api-crm.apps.example.com
+  - name: KEYCLOAK_ISSUER_URI
+    value: https://keycloak.example.com/realms/ncrm
+objects:
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: ncrm-backend
+      namespace: ${NAMESPACE}
+      labels:
+        app: ncrm-backend
+    spec:
+      replicas: 2
+      selector:
+        matchLabels:
+          app: ncrm-backend
+      template:
+        metadata:
+          labels:
+            app: ncrm-backend
+        spec:
+          containers:
+            - name: ncrm-backend
+              image: ${IMAGE}
+              ports:
+                - containerPort: 8080
+              env:
+                - name: SPRING_PROFILES_ACTIVE
+                  value: prod
+                - name: KEYCLOAK_ISSUER_URI
+                  value: ${KEYCLOAK_ISSUER_URI}
+              envFrom:
+                - secretRef:
+                    name: ncrm-backend-secrets
+              livenessProbe:
+                httpGet:
+                  path: /actuator/health/liveness
+                  port: 8080
+                initialDelaySeconds: 60
+              readinessProbe:
+                httpGet:
+                  path: /actuator/health/readiness
+                  port: 8080
+                initialDelaySeconds: 30
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      name: ncrm-backend
+      namespace: ${NAMESPACE}
+    spec:
+      selector:
+        app: ncrm-backend
+      ports:
+        - port: 8080
+          targetPort: 8080
+  - apiVersion: route.openshift.io/v1
+    kind: Route
+    metadata:
+      name: ncrm-backend
+      namespace: ${NAMESPACE}
+    spec:
+      host: ${ROUTE_HOST}
+      to:
+        kind: Service
+        name: ncrm-backend
+      tls:
+        termination: edge
+        insecureEdgeTerminationPolicy: Redirect

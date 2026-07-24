@@ -1,0 +1,385 @@
+databaseChangeLog:
+
+  - changeSet:
+      id: 001-01-countries
+      author: jbenak
+      changes:
+        - createTable:
+            tableName: countries
+            columns:
+              - column: { name: iso_code, type: varchar(3), constraints: { primaryKey: true, nullable: false } }
+              - column: { name: name, type: varchar(255), constraints: { nullable: false } }
+              - column: { name: name_en, type: varchar(255), constraints: { nullable: false } }
+              - column: { name: name_local, type: varchar(255) }
+              - column: { name: active, type: boolean, defaultValueBoolean: true, constraints: { nullable: false } }
+              - column: { name: eu_member, type: boolean, defaultValueBoolean: false, constraints: { nullable: false } }
+              - column: { name: embargoed, type: boolean, defaultValueBoolean: false, constraints: { nullable: false } }
+              - column: { name: vat_short_code, type: varchar(10) }
+              - column: { name: dialing_code, type: varchar(4), constraints: { nullable: false } }
+
+  - changeSet:
+      id: 001-02-addresses
+      author: jbenak
+      changes:
+        - createTable:
+            tableName: addresses
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: street, type: varchar(255) }
+              - column: { name: house_number, type: varchar(255) }
+              - column: { name: street_number, type: varchar(255) }
+              - column: { name: city, type: varchar(255) }
+              - column: { name: zip_code, type: varchar(255) }
+              - column: { name: country_id, type: varchar(3), constraints: { foreignKeyName: fk_addresses_country, references: countries(iso_code) } }
+
+  - changeSet:
+      id: 001-03-companies
+      author: jbenak
+      changes:
+        - createTable:
+            tableName: companies
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: name, type: varchar(255), constraints: { nullable: false } }
+              - column: { name: name_second_line, type: varchar(255) }
+              - column: { name: registration_id, type: varchar(255), constraints: { nullable: false, unique: true, uniqueConstraintName: uc_companies_registration_id } }
+              - column: { name: vat_id, type: varchar(255), constraints: { unique: true, uniqueConstraintName: uc_companies_vat_id } }
+              - column: { name: address_id, type: uuid, constraints: { foreignKeyName: fk_companies_address, references: addresses(id) } }
+              - column: { name: registration_note, type: text }
+              - column: { name: registration_note_en, type: text }
+              - column: { name: phone, type: varchar(255) }
+              - column: { name: email, type: varchar(255) }
+              - column: { name: website, type: varchar(255) }
+              - column: { name: bank_account, type: varchar(255) }
+              - column: { name: bank_name, type: varchar(255) }
+              - column: { name: iban, type: varchar(255) }
+              - column: { name: bic, type: varchar(255) }
+              - column: { name: active, type: boolean, defaultValueBoolean: true, constraints: { nullable: false } }
+              - column: { name: deleted, type: boolean, defaultValueBoolean: false, constraints: { nullable: false } }
+              - column: { name: deleted_at, type: date }
+              - column: { name: deleted_by, type: varchar(255) }
+              - column: { name: default_company, type: boolean, defaultValueBoolean: false, constraints: { nullable: false } }
+
+  - changeSet:
+      id: 001-04-vat-rates
+      author: jbenak
+      changes:
+        - createTable:
+            tableName: vat_rates
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: country_id, type: varchar(3), constraints: { foreignKeyName: fk_vat_rates_country, references: countries(iso_code) } }
+              - column: { name: type, type: varchar(20), constraints: { nullable: false } }
+              - column: { name: rate, type: "numeric(5, 2)", constraints: { nullable: false } }
+              - column: { name: valid_from, type: timestamp, constraints: { nullable: false } }
+              - column: { name: valid_to, type: timestamp }
+
+  - changeSet:
+      id: 001-05-roles
+      author: jbenak
+      changes:
+        - createTable:
+            tableName: roles
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: name, type: varchar(50), constraints: { nullable: false, unique: true, uniqueConstraintName: uc_roles_name } }
+              - column: { name: description, type: varchar(255) }
+
+  - changeSet:
+      id: 001-06-users
+      author: jbenak
+      changes:
+        - createTable:
+            tableName: users
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: username, type: varchar(100), constraints: { nullable: false, unique: true, uniqueConstraintName: uc_users_username } }
+              - column: { name: email, type: varchar(255), constraints: { nullable: false, unique: true, uniqueConstraintName: uc_users_email } }
+              - column: { name: password_hash, type: varchar(255), constraints: { nullable: false } }
+              - column: { name: first_name, type: varchar(100), constraints: { nullable: false } }
+              - column: { name: last_name, type: varchar(100), constraints: { nullable: false } }
+              - column: { name: enabled, type: boolean, defaultValueBoolean: true, constraints: { nullable: false } }
+              - column: { name: must_change_password, type: boolean, defaultValueBoolean: false, constraints: { nullable: false } }
+              - column: { name: locked, type: boolean, defaultValueBoolean: false, constraints: { nullable: false } }
+              - column: { name: credentials_expired, type: boolean, defaultValueBoolean: false, constraints: { nullable: false } }
+              - column: { name: last_login_at, type: timestamp }
+              - column: { name: created_at, type: timestamp, defaultValueComputed: CURRENT_TIMESTAMP, constraints: { nullable: false } }
+              - column: { name: updated_at, type: timestamp }
+
+  - changeSet:
+      id: 001-07-user-roles
+      author: jbenak
+      changes:
+        - createTable:
+            tableName: user_roles
+            columns:
+              - column: { name: user_id, type: uuid, constraints: { nullable: false, foreignKeyName: fk_user_roles_user, references: users(id) } }
+              - column: { name: role_id, type: uuid, constraints: { nullable: false, foreignKeyName: fk_user_roles_role, references: roles(id) } }
+        - addPrimaryKey:
+            tableName: user_roles
+            columnNames: user_id, role_id
+            constraintName: pk_user_roles
+
+  - changeSet:
+      id: 001-08-sales-representatives
+      author: jbenak
+      changes:
+        - createTable:
+            tableName: sales_representatives
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: code, type: varchar(20), constraints: { nullable: false, unique: true, uniqueConstraintName: uc_sales_representatives_code } }
+              - column: { name: user_id, type: uuid, constraints: { nullable: false, unique: true, uniqueConstraintName: uc_sales_representatives_user, foreignKeyName: fk_sales_representatives_user, references: users(id) } }
+              - column: { name: phone, type: varchar(255) }
+              - column: { name: business_email, type: varchar(255) }
+              - column: { name: region, type: varchar(100) }
+              - column: { name: note, type: varchar(255) }
+              - column: { name: active, type: boolean, defaultValueBoolean: true, constraints: { nullable: false } }
+              - column: { name: created_at, type: timestamp, defaultValueComputed: CURRENT_TIMESTAMP, constraints: { nullable: false } }
+              - column: { name: updated_at, type: timestamp }
+
+  - changeSet:
+      id: 001-09-item-categories
+      author: jbenak
+      changes:
+        - createTable:
+            tableName: item_categories
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: code, type: varchar(50), constraints: { nullable: false, unique: true, uniqueConstraintName: uc_item_categories_code } }
+              - column: { name: name, type: varchar(255), constraints: { nullable: false } }
+              - column: { name: description, type: varchar(255) }
+              - column: { name: path, type: varchar(255), constraints: { nullable: false } }
+              - column: { name: parent_id, type: uuid, constraints: { foreignKeyName: fk_item_categories_parent, references: item_categories(id) } }
+              - column: { name: sort_order, type: integer, defaultValueNumeric: 0, constraints: { nullable: false } }
+              - column: { name: active, type: boolean, defaultValueBoolean: true, constraints: { nullable: false } }
+              - column: { name: created_at, type: timestamp, defaultValueComputed: CURRENT_TIMESTAMP, constraints: { nullable: false } }
+              - column: { name: updated_at, type: timestamp }
+        - addUniqueConstraint:
+            tableName: item_categories
+            columnNames: parent_id, name
+            constraintName: uc_item_categories_parent_name
+        - createIndex:
+            tableName: item_categories
+            indexName: idx_item_categories_parent
+            columns:
+              - column: { name: parent_id }
+        - createIndex:
+            tableName: item_categories
+            indexName: idx_item_categories_path
+            columns:
+              - column: { name: path }
+
+  - changeSet:
+      id: 001-10-items
+      author: jbenak
+      changes:
+        - createTable:
+            tableName: items
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: code, type: varchar(50), constraints: { nullable: false, unique: true, uniqueConstraintName: uc_items_code } }
+              - column: { name: name, type: varchar(255), constraints: { nullable: false } }
+              - column: { name: description, type: varchar(255) }
+              - column: { name: item_type, type: varchar(20), constraints: { nullable: false } }
+              - column: { name: category_id, type: uuid, constraints: { foreignKeyName: fk_items_category, references: item_categories(id) } }
+              - column: { name: unit, type: varchar(20) }
+              - column: { name: active, type: boolean, defaultValueBoolean: true, constraints: { nullable: false } }
+              - column: { name: created_at, type: timestamp, defaultValueComputed: CURRENT_TIMESTAMP, constraints: { nullable: false } }
+              - column: { name: updated_at, type: timestamp }
+        - createIndex:
+            tableName: items
+            indexName: idx_items_category
+            columns:
+              - column: { name: category_id }
+
+  - changeSet:
+      id: 001-11-item-prices
+      author: jbenak
+      changes:
+        - createTable:
+            tableName: item_prices
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: item_id, type: uuid, constraints: { nullable: false, unique: true, uniqueConstraintName: uc_item_prices_item, foreignKeyName: fk_item_prices_item, references: items(id) } }
+              - column: { name: price, type: "numeric(12, 2)", constraints: { nullable: false } }
+              - column: { name: currency, type: varchar(3), constraints: { nullable: false } }
+              - column: { name: vat_rate, type: "numeric(5, 2)" }
+              - column: { name: valid_from, type: timestamp }
+              - column: { name: valid_to, type: timestamp }
+
+  - changeSet:
+      id: 001-12-customers
+      author: jbenak
+      changes:
+        - createTable:
+            tableName: customers
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: designation, type: varchar(255) }
+              - column: { name: name, type: varchar(255) }
+              - column: { name: registration_id, type: varchar(255), constraints: { nullable: false, unique: true, uniqueConstraintName: uc_customers_registration_id } }
+              - column: { name: vat_id, type: varchar(255), constraints: { unique: true, uniqueConstraintName: uc_customers_vat_id } }
+              - column: { name: email, type: varchar(255) }
+              - column: { name: phone, type: varchar(255) }
+              - column: { name: headquarters_address_id, type: uuid, constraints: { foreignKeyName: fk_customers_headquarters_address, references: addresses(id) } }
+              - column: { name: sales_representative_id, type: uuid, constraints: { foreignKeyName: fk_customers_sales_representative, references: sales_representatives(id) } }
+              - column: { name: active, type: boolean, defaultValueBoolean: true, constraints: { nullable: false } }
+              - column: { name: note, type: text }
+              - column: { name: created_at, type: timestamp, defaultValueComputed: CURRENT_TIMESTAMP, constraints: { nullable: false } }
+              - column: { name: updated_at, type: timestamp }
+        - createIndex:
+            tableName: customers
+            indexName: idx_customers_sales_representative
+            columns:
+              - column: { name: sales_representative_id }
+
+  - changeSet:
+      id: 001-13-contact-persons
+      author: jbenak
+      changes:
+        - createTable:
+            tableName: contact_persons
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: first_name, type: varchar(100), constraints: { nullable: false } }
+              - column: { name: last_name, type: varchar(100), constraints: { nullable: false } }
+              - column: { name: email, type: varchar(255) }
+              - column: { name: phone, type: varchar(255) }
+              - column: { name: position, type: varchar(100) }
+              - column: { name: note, type: varchar(255) }
+              - column: { name: active, type: boolean, defaultValueBoolean: true, constraints: { nullable: false } }
+              - column: { name: customer_id, type: uuid, constraints: { nullable: false, foreignKeyName: fk_contact_persons_customer, references: customers(id) } }
+        - createIndex:
+            tableName: contact_persons
+            indexName: idx_contact_persons_customer
+            columns:
+              - column: { name: customer_id }
+
+  - changeSet:
+      id: 001-14-customer-sites
+      author: jbenak
+      changes:
+        - createTable:
+            tableName: customer_sites
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: name, type: varchar(255), constraints: { nullable: false } }
+              - column: { name: customer_id, type: uuid, constraints: { nullable: false, foreignKeyName: fk_customer_sites_customer, references: customers(id) } }
+              - column: { name: address_id, type: uuid, constraints: { foreignKeyName: fk_customer_sites_address, references: addresses(id) } }
+              - column: { name: note, type: varchar(255) }
+              - column: { name: active, type: boolean, defaultValueBoolean: true, constraints: { nullable: false } }
+        - createIndex:
+            tableName: customer_sites
+            indexName: idx_customer_sites_customer
+            columns:
+              - column: { name: customer_id }
+
+  - changeSet:
+      id: 001-15-meetings
+      author: jbenak
+      changes:
+        - createTable:
+            tableName: meetings
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: customer_id, type: uuid, constraints: { nullable: false, foreignKeyName: fk_meetings_customer, references: customers(id) } }
+              - column: { name: contact_person_id, type: uuid, constraints: { foreignKeyName: fk_meetings_contact_person, references: contact_persons(id) } }
+              - column: { name: sales_representative_id, type: uuid, constraints: { nullable: false, foreignKeyName: fk_meetings_sales_representative, references: sales_representatives(id) } }
+              - column: { name: customer_site_id, type: uuid, constraints: { foreignKeyName: fk_meetings_customer_site, references: customer_sites(id) } }
+              - column: { name: subject, type: varchar(255), constraints: { nullable: false } }
+              - column: { name: description, type: varchar(255) }
+              - column: { name: planned_date, type: timestamp, constraints: { nullable: false } }
+              - column: { name: actual_date, type: timestamp }
+              - column: { name: status, type: varchar(20), constraints: { nullable: false } }
+              - column: { name: outcome, type: varchar(255) }
+              - column: { name: created_at, type: timestamp, defaultValueComputed: CURRENT_TIMESTAMP, constraints: { nullable: false } }
+              - column: { name: updated_at, type: timestamp }
+        - createIndex:
+            tableName: meetings
+            indexName: idx_meetings_customer
+            columns:
+              - column: { name: customer_id }
+        - createIndex:
+            tableName: meetings
+            indexName: idx_meetings_sales_representative
+            columns:
+              - column: { name: sales_representative_id }
+
+  - changeSet:
+      id: 001-16-orders
+      author: jbenak
+      changes:
+        - createTable:
+            tableName: orders
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: order_number, type: varchar(50), constraints: { nullable: false, unique: true, uniqueConstraintName: uc_orders_order_number } }
+              - column: { name: customer_id, type: uuid, constraints: { nullable: false, foreignKeyName: fk_orders_customer, references: customers(id) } }
+              - column: { name: contact_person_id, type: uuid, constraints: { foreignKeyName: fk_orders_contact_person, references: contact_persons(id) } }
+              - column: { name: sales_representative_id, type: uuid, constraints: { nullable: false, foreignKeyName: fk_orders_sales_representative, references: sales_representatives(id) } }
+              - column: { name: order_date, type: date, constraints: { nullable: false } }
+              - column: { name: status, type: varchar(20), constraints: { nullable: false } }
+              - column: { name: total_price, type: "numeric(14, 2)" }
+              - column: { name: currency, type: varchar(3) }
+              - column: { name: note, type: varchar(255) }
+              - column: { name: created_at, type: timestamp, defaultValueComputed: CURRENT_TIMESTAMP, constraints: { nullable: false } }
+              - column: { name: updated_at, type: timestamp }
+        - createIndex:
+            tableName: orders
+            indexName: idx_orders_customer
+            columns:
+              - column: { name: customer_id }
+        - createIndex:
+            tableName: orders
+            indexName: idx_orders_sales_representative
+            columns:
+              - column: { name: sales_representative_id }
+
+  - changeSet:
+      id: 001-17-order-items
+      author: jbenak
+      changes:
+        - createTable:
+            tableName: order_items
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: order_id, type: uuid, constraints: { nullable: false, foreignKeyName: fk_order_items_order, references: orders(id) } }
+              - column: { name: item_id, type: uuid, constraints: { nullable: false, foreignKeyName: fk_order_items_item, references: items(id) } }
+              - column: { name: quantity, type: "numeric(12, 3)", constraints: { nullable: false } }
+              - column: { name: unit_price, type: "numeric(12, 2)", constraints: { nullable: false } }
+              - column: { name: total_price, type: "numeric(14, 2)" }
+        - createIndex:
+            tableName: order_items
+            indexName: idx_order_items_order
+            columns:
+              - column: { name: order_id }
+
+  - changeSet:
+      id: 001-18-initial-roles
+      author: jbenak
+      changes:
+        - insert:
+            tableName: roles
+            columns:
+              - column: { name: id, valueComputed: gen_random_uuid() }
+              - column: { name: name, value: ADMIN }
+              - column: { name: description, value: Full administration access to the system. }
+        - insert:
+            tableName: roles
+            columns:
+              - column: { name: id, valueComputed: gen_random_uuid() }
+              - column: { name: name, value: OWNER }
+              - column: { name: description, value: Full access to the assigned company's data. }
+        - insert:
+            tableName: roles
+            columns:
+              - column: { name: id, valueComputed: gen_random_uuid() }
+              - column: { name: name, value: SALES_REPRESENTATIVE }
+              - column: { name: description, value: Sales representative conducting meetings and creating orders. }
+        - insert:
+            tableName: roles
+            columns:
+              - column: { name: id, valueComputed: gen_random_uuid() }
+              - column: { name: name, value: CUSTOMER }
+              - column: { name: description, value: Registered customer with limited access. }

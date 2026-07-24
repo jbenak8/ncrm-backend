@@ -1,0 +1,11 @@
+databaseChangeLog:
+
+  - changeSet:
+      id: 014-01-company-stamp
+      author: jbenak
+      changes:
+        - addColumn:
+            tableName: companies
+            columns:
+              - column: { name: stamp, type: bytea }
+              - column: { name: stamp_content_type, type: varchar(100) }

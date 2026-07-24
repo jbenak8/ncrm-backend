@@ -1,0 +1,27 @@
+databaseChangeLog:
+
+  - changeSet:
+      id: 008-01-order-company
+      author: jbenak
+      changes:
+        - addColumn:
+            tableName: orders
+            columns:
+              - column: { name: company_id, type: uuid, constraints: { foreignKeyName: fk_orders_company, references: companies(id) } }
+        - createIndex:
+            tableName: orders
+            indexName: ix_orders_company_id
+            columns:
+              - column: { name: company_id }
+
+  # Backfill existing orders with the default company so that historical orders
+  # show the issuing company as well.
+  - changeSet:
+      id: 008-02-order-company-backfill
+      author: jbenak
+      changes:
+        - sql:
+            sql: >-
+              UPDATE orders SET company_id =
+              (SELECT id FROM companies WHERE default_company = TRUE AND deleted = FALSE LIMIT 1)
+              WHERE company_id IS NULL

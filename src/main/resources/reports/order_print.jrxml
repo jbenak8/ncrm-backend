@@ -1,0 +1,149 @@
+<!-- Created with Jaspersoft Studio version 7.0.6.final using JasperReports Library version 7.0.6-5d2a603fdc6b3db8f842a83383e594f41891534d  -->
+<jasperReport name="order_print" language="java" pageWidth="595" pageHeight="842" columnWidth="535" leftMargin="30" rightMargin="30" topMargin="30" bottomMargin="30" uuid="9f3cfcdb-1ab0-45df-8bcc-82961a55973c">
+	<style name="Base" default="true" fontName="DejaVu Sans" fontSize="9.0"/>
+	<parameter name="ORDER_NUMBER" class="java.lang.String"/>
+	<parameter name="ORDER_DATE" class="java.lang.String"/>
+	<parameter name="STATUS" class="java.lang.String"/>
+	<parameter name="CURRENCY" class="java.lang.String"/>
+	<parameter name="NOTE" class="java.lang.String"/>
+	<parameter name="TOTAL_PRICE" class="java.math.BigDecimal"/>
+	<parameter name="SALES_REPRESENTATIVE" class="java.lang.String"/>
+	<parameter name="SUPPLIER_NAME" class="java.lang.String"/>
+	<parameter name="SUPPLIER_ADDRESS" class="java.lang.String"/>
+	<parameter name="SUPPLIER_REG_ID" class="java.lang.String"/>
+	<parameter name="SUPPLIER_VAT_ID" class="java.lang.String"/>
+	<parameter name="SUPPLIER_CONTACT" class="java.lang.String"/>
+	<parameter name="SUPPLIER_BANK" class="java.lang.String"/>
+	<parameter name="CUSTOMER_NAME" class="java.lang.String"/>
+	<parameter name="CUSTOMER_ADDRESS" class="java.lang.String"/>
+	<parameter name="CUSTOMER_REG_ID" class="java.lang.String"/>
+	<parameter name="CUSTOMER_VAT_ID" class="java.lang.String"/>
+	<parameter name="CUSTOMER_CONTACT" class="java.lang.String"/>
+	<field name="itemCode" class="java.lang.String"/>
+	<field name="itemName" class="java.lang.String"/>
+	<field name="quantity" class="java.math.BigDecimal"/>
+	<field name="unit" class="java.lang.String"/>
+	<field name="unitPrice" class="java.math.BigDecimal"/>
+	<field name="totalPrice" class="java.math.BigDecimal"/>
+	<title height="196">
+		<element kind="textField" uuid="99377723-9d7e-4f88-8f78-38effaab70ec" x="0" y="0" width="535" height="30" fontSize="14.0" bold="true">
+			<expression><![CDATA["OBJEDNÁVKA č. " + $P{ORDER_NUMBER}]]></expression>
+		</element>
+		<element kind="staticText" uuid="cd9e79ef-7f31-4d56-a481-21ab4043e739" x="0" y="40" width="255" height="14" bold="true">
+			<text><![CDATA[Dodavatel:]]></text>
+		</element>
+		<element kind="textField" uuid="12cad748-4fa7-4ce0-9f49-0a1e437d05fa" x="0" y="56" width="255" height="14" blankWhenNull="true" bold="true">
+			<expression><![CDATA[$P{SUPPLIER_NAME}]]></expression>
+		</element>
+		<element kind="textField" uuid="0d086618-6cb2-47e3-9245-82e2808c9610" x="0" y="70" width="255" height="14" blankWhenNull="true">
+			<expression><![CDATA[$P{SUPPLIER_ADDRESS}]]></expression>
+		</element>
+		<element kind="textField" uuid="06bd85ff-8712-48d1-85a8-e1e3de5827d6" x="0" y="84" width="255" height="14" blankWhenNull="true">
+			<expression><![CDATA[$P{SUPPLIER_REG_ID} == null ? null : ("IČ: " + $P{SUPPLIER_REG_ID})]]></expression>
+		</element>
+		<element kind="textField" uuid="9ca4a43b-d81f-4479-a6e4-878c61c92bc3" x="0" y="98" width="255" height="14" blankWhenNull="true">
+			<expression><![CDATA[$P{SUPPLIER_VAT_ID} == null ? null : ("DIČ: " + $P{SUPPLIER_VAT_ID})]]></expression>
+		</element>
+		<element kind="textField" uuid="86b960ff-2760-477b-93ef-3a9840a320da" x="0" y="112" width="255" height="14" blankWhenNull="true">
+			<expression><![CDATA[$P{SUPPLIER_CONTACT}]]></expression>
+		</element>
+		<element kind="textField" uuid="31ffe54f-297c-435b-b5f1-c5f50b20e11c" x="0" y="126" width="255" height="14" blankWhenNull="true">
+			<expression><![CDATA[$P{SUPPLIER_BANK} == null ? null : ("Bankovní spojení: " + $P{SUPPLIER_BANK})]]></expression>
+		</element>
+		<element kind="staticText" uuid="31f3b412-e98e-4ad1-a9b0-d453f2bb7f32" x="280" y="40" width="255" height="14" bold="true">
+			<text><![CDATA[Odběratel:]]></text>
+		</element>
+		<element kind="textField" uuid="175b4095-ddab-4a1a-811c-6f0ecc317c1b" x="280" y="56" width="255" height="14" blankWhenNull="true" bold="true">
+			<expression><![CDATA[$P{CUSTOMER_NAME}]]></expression>
+		</element>
+		<element kind="textField" uuid="76c9911f-7abd-43f6-86b8-c1f09f393317" x="280" y="70" width="255" height="14" blankWhenNull="true">
+			<expression><![CDATA[$P{CUSTOMER_ADDRESS}]]></expression>
+		</element>
+		<element kind="textField" uuid="d76a9de9-fea5-4d77-a8ea-adc8d3fbc865" x="280" y="84" width="255" height="14" blankWhenNull="true">
+			<expression><![CDATA[$P{CUSTOMER_REG_ID} == null ? null : ("IČ: " + $P{CUSTOMER_REG_ID})]]></expression>
+		</element>
+		<element kind="textField" uuid="8f0d6d02-f3af-419f-b24b-eec08938cd46" x="280" y="98" width="255" height="14" blankWhenNull="true">
+			<expression><![CDATA[$P{CUSTOMER_VAT_ID} == null ? null : ("DIČ: " + $P{CUSTOMER_VAT_ID})]]></expression>
+		</element>
+		<element kind="textField" uuid="1fd914bf-ceec-4dae-8667-cd7906af4a66" x="280" y="112" width="255" height="14" blankWhenNull="true">
+			<expression><![CDATA[$P{CUSTOMER_CONTACT}]]></expression>
+		</element>
+		<element kind="line" uuid="e5490a80-6ac8-46ea-9154-ddbe4a87b02a" x="0" y="150" width="535" height="1"/>
+		<element kind="textField" uuid="7f7fd1af-c522-410b-81f2-966244073bb7" x="0" y="158" width="255" height="14" blankWhenNull="true">
+			<expression><![CDATA[$P{ORDER_DATE} == null ? null : ("Datum vystavení: " + $P{ORDER_DATE})]]></expression>
+		</element>
+		<element kind="textField" uuid="8a23ff3f-6ade-4963-b834-7182b5747123" x="280" y="158" width="255" height="14" blankWhenNull="true">
+			<expression><![CDATA[$P{STATUS} == null ? null : ("Stav objednávky: " + $P{STATUS})]]></expression>
+		</element>
+		<element kind="textField" uuid="346ce58a-b994-4267-8dbd-2cf13a3d215f" x="0" y="172" width="535" height="14" blankWhenNull="true">
+			<expression><![CDATA[$P{SALES_REPRESENTATIVE} == null ? null : ("Vystavil (obchodní zástupce): " + $P{SALES_REPRESENTATIVE})]]></expression>
+		</element>
+		<element kind="line" uuid="4b62faf9-da20-4ff1-a348-eafac690645b" x="0" y="195" width="535" height="1"/>
+	</title>
+	<columnHeader height="22">
+		<element kind="staticText" uuid="092da24a-2193-444a-b876-2ecc8d3c5c67" x="0" y="0" width="70" height="18" bold="true">
+			<text><![CDATA[Kód]]></text>
+		</element>
+		<element kind="staticText" uuid="01679da4-8ad9-4816-99b0-b88999553831" x="70" y="0" width="215" height="18" bold="true">
+			<text><![CDATA[Označení dodávky]]></text>
+		</element>
+		<element kind="staticText" uuid="75e6817a-57d6-40f7-9c6f-729758250560" x="285" y="0" width="70" height="18" bold="true" hTextAlign="Right">
+			<text><![CDATA[Množství]]></text>
+		</element>
+		<element kind="staticText" uuid="746af6e0-298d-48ec-a785-58af7ac0d954" x="355" y="0" width="40" height="18" bold="true">
+			<text><![CDATA[ MJ]]></text>
+		</element>
+		<element kind="staticText" uuid="9a718b32-eb07-4958-a27a-023bca21d4ce" x="395" y="0" width="70" height="18" bold="true" hTextAlign="Right">
+			<text><![CDATA[Cena/MJ]]></text>
+		</element>
+		<element kind="staticText" uuid="411ae552-5e3e-405d-a48e-cd5c2642833d" x="465" y="0" width="70" height="18" bold="true" hTextAlign="Right">
+			<text><![CDATA[Celkem]]></text>
+		</element>
+		<element kind="line" uuid="fa8802eb-a8d9-4391-a0bd-fe74c70e8e0f" x="0" y="20" width="535" height="1"/>
+	</columnHeader>
+	<detail>
+		<band height="16">
+			<element kind="textField" uuid="9e03e777-4099-4342-bd21-d7b0d456056a" x="0" y="0" width="70" height="14" blankWhenNull="true">
+				<expression><![CDATA[$F{itemCode}]]></expression>
+			</element>
+			<element kind="textField" uuid="9dd4069b-e605-4569-8021-180e75e6b797" x="70" y="0" width="215" height="14" blankWhenNull="true">
+				<expression><![CDATA[$F{itemName}]]></expression>
+			</element>
+			<element kind="textField" uuid="f8e10dba-28ec-4d4d-b26f-aac7ff6b3b69" x="285" y="0" width="70" height="14" pattern="#,##0.###" blankWhenNull="true" hTextAlign="Right">
+				<expression><![CDATA[$F{quantity}]]></expression>
+			</element>
+			<element kind="textField" uuid="8b5fff2e-2f80-429c-ad3d-4e0cdf7acb61" x="355" y="0" width="40" height="14" blankWhenNull="true">
+				<expression><![CDATA[$F{unit} == null ? null : (" " + $F{unit})]]></expression>
+			</element>
+			<element kind="textField" uuid="c4196545-484e-4ab9-97cb-25037ea73697" x="395" y="0" width="70" height="14" pattern="#,##0.00" blankWhenNull="true" hTextAlign="Right">
+				<expression><![CDATA[$F{unitPrice}]]></expression>
+			</element>
+			<element kind="textField" uuid="b918c1c8-1dcd-433d-8a0a-28cff28ca659" x="465" y="0" width="70" height="14" pattern="#,##0.00" blankWhenNull="true" hTextAlign="Right">
+				<expression><![CDATA[$F{totalPrice}]]></expression>
+			</element>
+		</band>
+	</detail>
+	<pageFooter height="20">
+		<element kind="textField" uuid="7d2b8c3e-1f4a-4e5b-9c6d-2a3b4c5d6e01" x="335" y="0" width="160" height="14" hTextAlign="Right">
+			<expression><![CDATA["Strana " + $V{PAGE_NUMBER} + " z"]]></expression>
+		</element>
+		<element kind="textField" uuid="7d2b8c3e-1f4a-4e5b-9c6d-2a3b4c5d6e02" x="495" y="0" width="40" height="14" evaluationTime="Report">
+			<expression><![CDATA[" " + $V{PAGE_NUMBER}]]></expression>
+		</element>
+	</pageFooter>
+	<summary height="117">
+		<element kind="line" uuid="d060b44f-d631-44cb-96d6-a4948662771e" x="0" y="4" width="535" height="1"/>
+		<element kind="textField" uuid="9a7ca290-8b35-408a-9ccc-73b82a7c630f" x="285" y="12" width="250" height="20" fontSize="12.0" blankWhenNull="true" bold="true" hTextAlign="Right">
+			<expression><![CDATA["Celkem k úhradě: "
+                + ($P{TOTAL_PRICE} == null ? "" : new java.text.DecimalFormat("#,##0.00").format($P{TOTAL_PRICE}))
+                + ($P{CURRENCY} == null ? "" : (" " + $P{CURRENCY}))]]></expression>
+		</element>
+		<element kind="textField" uuid="4a25b495-c773-44c8-afc2-0a3c44a68c6b" x="0" y="40" width="535" height="28" textAdjust="StretchHeight" blankWhenNull="true">
+			<expression><![CDATA[$P{NOTE} == null ? null : ("Poznámka: " + $P{NOTE})]]></expression>
+		</element>
+		<element kind="staticText" uuid="947a9b71-e74d-4568-a35d-f20dfe6f2081" x="335" y="70" width="200" height="14" hTextAlign="Center">
+			<text><![CDATA[.......................................
+razítko a podpis]]></text>
+		</element>
+	</summary>
+</jasperReport>

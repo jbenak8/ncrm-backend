@@ -1,0 +1,33 @@
+# Standalone deployment with database authentication ("db-auth" profile): backend only.
+# No Keycloak, MailHog or PostgreSQL containers are started - the application authenticates users
+# against its own database and connects to an externally managed PostgreSQL instance and SMTP server.
+#
+# Usage:
+#   docker compose -f docker-compose.db-auth.yaml up --build -d
+#
+# Required environment variables (e.g. via an .env file next to this compose file):
+#   DB_URL, DB_USERNAME, DB_PASSWORD  - external PostgreSQL connection
+#   MAIL_HOST, MAIL_PORT, MAIL_USERNAME, MAIL_PASSWORD - external SMTP server
+#   NCRM_JWT_SECRET - random string of at least 32 bytes (e.g. "openssl rand -base64 48")
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.db-auth
+    environment:
+      SPRING_PROFILES_ACTIVE: db-auth
+      DB_URL: ${DB_URL:?external PostgreSQL JDBC URL, e.g. jdbc:postgresql://db.example.com:5432/nCRM}
+      DB_USERNAME: ${DB_USERNAME:?database username}
+      DB_PASSWORD: ${DB_PASSWORD:?database password}
+      MAIL_HOST: ${MAIL_HOST:?SMTP server host}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      NCRM_CORS_ALLOWED_ORIGINS: ${NCRM_CORS_ALLOWED_ORIGINS:-http://localhost:3000}
+      NCRM_JWT_SECRET: ${NCRM_JWT_SECRET:?shared HMAC secret (at least 32 bytes) used to sign access tokens}
+      NCRM_JWT_TTL: ${NCRM_JWT_TTL:-PT1H}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    ports:
+      - "8080:8080"
+    restart: unless-stopped

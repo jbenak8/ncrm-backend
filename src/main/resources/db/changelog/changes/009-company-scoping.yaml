@@ -1,0 +1,62 @@
+databaseChangeLog:
+
+  - changeSet:
+      id: 009-01-meeting-company
+      author: jbenak
+      changes:
+        - addColumn:
+            tableName: meetings
+            columns:
+              - column: { name: company_id, type: uuid, constraints: { foreignKeyName: fk_meetings_company, references: companies(id) } }
+        - createIndex:
+            tableName: meetings
+            indexName: ix_meetings_company_id
+            columns:
+              - column: { name: company_id }
+
+  - changeSet:
+      id: 009-02-campaign-company
+      author: jbenak
+      changes:
+        - addColumn:
+            tableName: campaigns
+            columns:
+              - column: { name: company_id, type: uuid, constraints: { foreignKeyName: fk_campaigns_company, references: companies(id) } }
+        - createIndex:
+            tableName: campaigns
+            indexName: ix_campaigns_company_id
+            columns:
+              - column: { name: company_id }
+
+  # Backfill existing meetings and campaigns with the default company so that
+  # historical data shows the issuing company as well.
+  - changeSet:
+      id: 009-03-company-backfill
+      author: jbenak
+      changes:
+        - sql:
+            sql: >-
+              UPDATE meetings SET company_id =
+              (SELECT id FROM companies WHERE default_company = TRUE AND deleted = FALSE LIMIT 1)
+              WHERE company_id IS NULL
+        - sql:
+            sql: >-
+              UPDATE campaigns SET company_id =
+              (SELECT id FROM companies WHERE default_company = TRUE AND deleted = FALSE LIMIT 1)
+              WHERE company_id IS NULL
+
+  # Assignment of users (owners, sales representatives) to own companies. Users
+  # without any assignment keep access to all companies (backwards compatible).
+  - changeSet:
+      id: 009-04-user-companies
+      author: jbenak
+      changes:
+        - createTable:
+            tableName: user_companies
+            columns:
+              - column: { name: user_id, type: uuid, constraints: { nullable: false, foreignKeyName: fk_user_companies_user, references: users(id) } }
+              - column: { name: company_id, type: uuid, constraints: { nullable: false, foreignKeyName: fk_user_companies_company, references: companies(id) } }
+        - addPrimaryKey:
+            tableName: user_companies
+            columnNames: user_id, company_id
+            constraintName: pk_user_companies
