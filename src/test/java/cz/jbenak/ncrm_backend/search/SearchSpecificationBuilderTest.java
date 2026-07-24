@@ -147,6 +147,15 @@ class SearchSpecificationBuilderTest {
     }
 
     @Test
+    void isNullAndIsNotNullBuildNullnessPredicates() {
+        apply("value:isNull", Object.class);
+        verify(cb).isNull(path);
+
+        apply("value:isNotNull", Object.class);
+        verify(cb).isNotNull(path);
+    }
+
+    @Test
     void containsIsRejectedForNonTextFields() {
         assertThatThrownBy(() -> apply("value:contains:1", Integer.class))
                 .isInstanceOf(IllegalArgumentException.class)

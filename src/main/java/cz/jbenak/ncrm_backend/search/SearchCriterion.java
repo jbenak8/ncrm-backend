@@ -19,10 +19,16 @@ public record SearchCriterion(String field, SearchOperator operator, String valu
             throw new IllegalArgumentException("Filter expression must not be empty");
         }
         String[] parts = expression.split(":", 3);
-        if (parts.length < 3 || parts[0].isBlank() || parts[1].isBlank()) {
+        if (parts.length < 2 || parts[0].isBlank() || parts[1].isBlank()) {
             throw new IllegalArgumentException(
                     "Invalid filter expression '" + expression + "'. Expected format field:operator:value");
         }
-        return new SearchCriterion(parts[0].trim(), SearchOperator.fromToken(parts[1].trim()), parts[2].trim());
+        SearchOperator operator = SearchOperator.fromToken(parts[1].trim());
+        // The null-check operators carry no value; all other operators require one.
+        if (parts.length < 3 && operator != SearchOperator.IS_NULL && operator != SearchOperator.IS_NOT_NULL) {
+            throw new IllegalArgumentException(
+                    "Invalid filter expression '" + expression + "'. Expected format field:operator:value");
+        }
+        return new SearchCriterion(parts[0].trim(), operator, parts.length < 3 ? "" : parts[2].trim());
     }
 }

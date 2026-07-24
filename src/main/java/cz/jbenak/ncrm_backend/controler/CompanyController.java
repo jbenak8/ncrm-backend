@@ -3,6 +3,7 @@ package cz.jbenak.ncrm_backend.controler;
 import cz.jbenak.ncrm_backend.model.dto.company.CompanyDto;
 import cz.jbenak.ncrm_backend.model.dto.company.CompanyLogoDto;
 import cz.jbenak.ncrm_backend.model.dto.company.CompanyRequest;
+import cz.jbenak.ncrm_backend.security.CustomerScope;
 import cz.jbenak.ncrm_backend.services.CompanyService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -29,12 +30,17 @@ import java.util.UUID;
 public class CompanyController {
 
     private final CompanyService companyService;
+    private final CustomerScope customerScope;
 
     // Sales representatives may list the companies as well (scoped to their assignment)
-    // so that the frontend can filter the dashboard data by the active company.
+    // so that the frontend can filter the dashboard data by the active company. Customers
+    // may list strictly the companies assigned to their account (needed to place orders).
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'SALES_REPRESENTATIVE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'SALES_REPRESENTATIVE', 'CUSTOMER')")
     public List<CompanyDto> findAll(Authentication authentication) {
+        if (customerScope.isCustomer(authentication)) {
+            return companyService.findAssignedTo(authentication.getName());
+        }
         boolean admin = authentication.getAuthorities().stream()
                 .anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
         return companyService.findAllForUser(authentication.getName(), admin);
@@ -79,7 +85,7 @@ public class CompanyController {
     }
 
     @GetMapping("/{id}/logo")
-    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'SALES_REPRESENTATIVE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'SALES_REPRESENTATIVE', 'CUSTOMER')")
     public ResponseEntity<byte[]> getLogo(@PathVariable UUID id) {
         CompanyLogoDto logo = companyService.getLogo(id);
         return ResponseEntity.ok()

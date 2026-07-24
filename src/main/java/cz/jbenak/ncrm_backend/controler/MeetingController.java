@@ -2,6 +2,7 @@ package cz.jbenak.ncrm_backend.controler;
 
 import cz.jbenak.ncrm_backend.model.dto.customer.MeetingDto;
 import cz.jbenak.ncrm_backend.model.dto.customer.MeetingRequest;
+import cz.jbenak.ncrm_backend.security.CustomerScope;
 import cz.jbenak.ncrm_backend.services.MeetingService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -9,6 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,7 +21,7 @@ import java.util.UUID;
  * @version 1.0
  * @since 2026-07-11
  * REST API for planning and realization of business meetings including meeting minutes.
- * Available to the owner and sales representatives.
+ * Available to the owner and sales representatives; customers may list their own meetings.
  */
 @RestController
 @RequestMapping("/api/meetings")
@@ -28,9 +30,17 @@ import java.util.UUID;
 public class MeetingController {
 
     private final MeetingService meetingService;
+    private final CustomerScope customerScope;
 
     @GetMapping
-    public List<MeetingDto> findAll() {
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'SALES_REPRESENTATIVE', 'CUSTOMER')")
+    public List<MeetingDto> findAll(Authentication authentication) {
+        if (customerScope.isCustomer(authentication)) {
+            // A customer only sees the meetings of the customer record linked to their account.
+            return customerScope.customerId(authentication)
+                    .map(meetingService::findByCustomer)
+                    .orElseGet(List::of);
+        }
         return meetingService.findAll();
     }
 
@@ -41,8 +51,10 @@ public class MeetingController {
      * Example: {@code /api/meetings/search?filter=subject:contains:demo&filter=status:eq:PLANNED}
      */
     @GetMapping("/search")
-    public Page<MeetingDto> search(@RequestParam(required = false) List<String> filter, Pageable pageable) {
-        return meetingService.search(filter, pageable);
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'SALES_REPRESENTATIVE', 'CUSTOMER')")
+    public Page<MeetingDto> search(@RequestParam(required = false) List<String> filter, Pageable pageable,
+                                   Authentication authentication) {
+        return meetingService.search(customerScope.scopedFilters(filter, authentication), pageable);
     }
 
     @GetMapping("/{id}")

@@ -2,6 +2,7 @@ package cz.jbenak.ncrm_backend.controler;
 
 import cz.jbenak.ncrm_backend.model.dto.invoice.InvoiceDto;
 import cz.jbenak.ncrm_backend.model.dto.invoice.IssueInvoiceRequest;
+import cz.jbenak.ncrm_backend.security.CustomerScope;
 import cz.jbenak.ncrm_backend.services.InvoiceService;
 import cz.jbenak.ncrm_backend.services.ReportService;
 import jakarta.validation.Valid;
@@ -11,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -31,10 +33,19 @@ public class InvoiceController {
 
     private final InvoiceService invoiceService;
     private final ReportService reportService;
+    private final CustomerScope customerScope;
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'SALES_REPRESENTATIVE')")
-    public List<InvoiceDto> findAll() {
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'SALES_REPRESENTATIVE', 'CUSTOMER')")
+    public List<InvoiceDto> findAll(Authentication authentication) {
+        if (customerScope.isCustomer(authentication)) {
+            // A customer only sees the invoices of the customer record linked to their account.
+            return customerScope.customerId(authentication)
+                    .map(customerId -> invoiceService.findAll().stream()
+                            .filter(invoice -> customerId.equals(invoice.customerId()))
+                            .toList())
+                    .orElseGet(List::of);
+        }
         return invoiceService.findAll();
     }
 

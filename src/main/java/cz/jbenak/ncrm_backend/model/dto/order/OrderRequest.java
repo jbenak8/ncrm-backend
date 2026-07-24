@@ -22,7 +22,9 @@ public record OrderRequest(
         // Own company issuing the order; when null, the default company is used.
         UUID companyId,
         UUID contactPersonId,
-        @NotNull UUID salesRepresentativeId,
+        // Mandatory for orders created by the back office; optional (ignored) for orders
+        // created by a logged-in customer user, which have no sales representative.
+        UUID salesRepresentativeId,
         @NotNull LocalDate orderDate,
         String currency,
         String note,

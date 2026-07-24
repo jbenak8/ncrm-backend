@@ -23,3 +23,5 @@ databaseChangeLog:
       file: db/changelog/changes/011-quotations.yaml
   - include:
       file: db/changelog/changes/012-user-customer.yaml
+  - include:
+      file: db/changelog/changes/013-customer-orders.yaml

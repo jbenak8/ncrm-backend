@@ -29,6 +29,9 @@ public interface OrderRepository extends JpaRepository<OrderEntity, UUID>, JpaSp
 
     List<OrderEntity> findAllByStatus(OrderEntity.OrderStatus status);
 
+    // Orders created directly by customer users have no sales representative assigned.
+    List<OrderEntity> findAllBySalesRepresentativeIsNullOrderByOrderDateDesc();
+
     long countByStatusIn(List<OrderEntity.OrderStatus> statuses);
 
     @Query("select coalesce(sum(o.totalPrice), 0) from OrderEntity o where o.status <> 'CANCELLED'")

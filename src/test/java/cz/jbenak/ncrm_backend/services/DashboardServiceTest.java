@@ -120,6 +120,29 @@ class DashboardServiceTest {
     }
 
     @Test
+    void salesByRepresentativeSkipsOrdersWithoutRepresentative() {
+        UUID repId = UUID.randomUUID();
+        UserEntity user = new UserEntity();
+        user.setFirstName("Jan");
+        user.setLastName("Novák");
+        SalesRepresentativeEntity rep = new SalesRepresentativeEntity();
+        rep.setUser(user);
+
+        // Orders placed directly by customers are aggregated with a null representative id
+        // and must not break the dashboard (previously caused "The given id must not be null").
+        when(orderRepository.aggregateOrdersBySalesRepresentative()).thenReturn(List.<Object[]>of(
+                new Object[]{null, 3L, new BigDecimal("3000")},
+                new Object[]{repId, 7L, new BigDecimal("7000")}));
+        when(salesRepresentativeRepository.findById(repId)).thenReturn(Optional.of(rep));
+        when(meetingRepository.countBySalesRepresentativeId(repId)).thenReturn(4L);
+
+        List<DashboardDtos.SalesByRepresentative> rows = dashboardService.salesByRepresentative();
+
+        assertThat(rows).hasSize(1);
+        assertThat(rows.getFirst().salesRepresentativeId()).isEqualTo(repId);
+    }
+
+    @Test
     void topCustomersMapsAggregationRows() {
         UUID customerId = UUID.randomUUID();
         when(orderRepository.aggregateTopCustomers(10)).thenReturn(List.<Object[]>of(

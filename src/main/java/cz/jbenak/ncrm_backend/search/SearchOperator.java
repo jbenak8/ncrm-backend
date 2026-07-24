@@ -23,7 +23,11 @@ public enum SearchOperator {
     /** Value is greater than the given value. */
     GT("gt"),
     /** Value is between the two given values (inclusive), separated by a comma. */
-    BETWEEN("between");
+    BETWEEN("between"),
+    /** Value is null; the value part of the expression is ignored. */
+    IS_NULL("isNull"),
+    /** Value is not null; the value part of the expression is ignored. */
+    IS_NOT_NULL("isNotNull");
 
     private final String token;
 

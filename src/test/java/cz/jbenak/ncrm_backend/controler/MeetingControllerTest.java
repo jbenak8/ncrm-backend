@@ -1,6 +1,7 @@
 package cz.jbenak.ncrm_backend.controler;
 
 import cz.jbenak.ncrm_backend.configuration.SecurityConfig;
+import cz.jbenak.ncrm_backend.security.CustomerScope;
 import cz.jbenak.ncrm_backend.services.MeetingService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,8 +14,10 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -35,6 +38,9 @@ class MeetingControllerTest {
     @MockitoBean
     private MeetingService meetingService;
 
+    @MockitoBean
+    private CustomerScope customerScope;
+
     @Test
     void anonymousIsRejected() throws Exception {
         mockMvc.perform(get("/api/meetings"))
@@ -43,8 +49,24 @@ class MeetingControllerTest {
 
     @Test
     @WithMockUser(roles = "CUSTOMER")
-    void customerCannotAccessMeetings() throws Exception {
+    void customerListingMeetingsIsScopedToOwnCustomer() throws Exception {
+        UUID customerId = UUID.randomUUID();
+        when(customerScope.isCustomer(any())).thenReturn(true);
+        when(customerScope.customerId(any())).thenReturn(Optional.of(customerId));
+        when(meetingService.findByCustomer(customerId)).thenReturn(List.of());
         mockMvc.perform(get("/api/meetings"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(roles = "CUSTOMER")
+    void customerCannotCreateMeeting() throws Exception {
+        mockMvc.perform(post("/api/meetings")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"customerId":"%s","salesRepresentativeId":"%s",
+                                 "subject":"Demo","plannedDate":"2026-07-24T10:00:00"}
+                                """.formatted(UUID.randomUUID(), UUID.randomUUID())))
                 .andExpect(status().isForbidden());
     }
 

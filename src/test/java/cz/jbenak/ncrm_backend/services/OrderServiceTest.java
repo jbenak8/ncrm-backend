@@ -1,8 +1,11 @@
 package cz.jbenak.ncrm_backend.services;
 
 import cz.jbenak.ncrm_backend.model.dto.order.OrderRequest;
+import cz.jbenak.ncrm_backend.model.entity.company.CompanyEntity;
 import cz.jbenak.ncrm_backend.model.entity.company.SalesRepresentativeEntity;
 import cz.jbenak.ncrm_backend.model.entity.customer.CustomerEntity;
+import cz.jbenak.ncrm_backend.model.entity.security.RoleEntity;
+import cz.jbenak.ncrm_backend.model.entity.security.UserEntity;
 import cz.jbenak.ncrm_backend.model.entity.order.OrderEntity;
 import cz.jbenak.ncrm_backend.model.entity.order.OrderItemEntity;
 import cz.jbenak.ncrm_backend.model.entity.store.ItemEntity;
@@ -14,6 +17,7 @@ import cz.jbenak.ncrm_backend.repository.CustomerRepository;
 import cz.jbenak.ncrm_backend.repository.ItemRepository;
 import cz.jbenak.ncrm_backend.repository.OrderRepository;
 import cz.jbenak.ncrm_backend.repository.SalesRepresentativeRepository;
+import cz.jbenak.ncrm_backend.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -25,6 +29,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -55,6 +60,8 @@ class OrderServiceTest {
     private SalesRepresentativeRepository salesRepresentativeRepository;
     @Mock
     private ItemRepository itemRepository;
+    @Mock
+    private UserRepository userRepository;
     @Mock
     private OrderMapper orderMapper;
     @Mock
@@ -107,6 +114,56 @@ class OrderServiceTest {
         assertThat(saved.getStatus()).isEqualTo(OrderEntity.OrderStatus.NEW);
         assertThat(saved.getOrderNumber()).startsWith("ORD-");
         verify(orderEmailService).sendOrderCreated(saved);
+    }
+
+    @Test
+    void createByCustomerUserHasNoSalesRepresentativeAndNotifiesCompany() {
+        UUID itemId = UUID.randomUUID();
+
+        CustomerEntity customer = new CustomerEntity();
+        CompanyEntity company = new CompanyEntity();
+        company.setId(UUID.randomUUID());
+        company.setEmail("orders@company.local");
+        RoleEntity role = new RoleEntity();
+        role.setName("CUSTOMER");
+        UserEntity user = new UserEntity();
+        user.setUsername("customer1");
+        user.setRoles(Set.of(role));
+        user.setCompanies(Set.of(company));
+        user.setCustomer(customer);
+        when(userRepository.findByUsername("customer1")).thenReturn(Optional.of(user));
+
+        ItemEntity item = new ItemEntity();
+        item.setCode("IT-1");
+        ItemPriceEntity price = new ItemPriceEntity();
+        price.setPrice(new BigDecimal("10.00"));
+        price.setCurrency("CZK");
+        item.setPrice(price);
+        when(itemRepository.findById(itemId)).thenReturn(Optional.of(item));
+        when(orderRepository.save(any(OrderEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        OrderRequest request = new OrderRequest(UUID.randomUUID(), null, null, null, LocalDate.now(), null, null,
+                List.of(new OrderRequest.OrderItemRequest(itemId, new BigDecimal("2"))));
+        orderService.create(request, "customer1");
+
+        ArgumentCaptor<OrderEntity> captor = ArgumentCaptor.forClass(OrderEntity.class);
+        verify(orderRepository).save(captor.capture());
+        OrderEntity saved = captor.getValue();
+        assertThat(saved.getSalesRepresentative()).isNull();
+        assertThat(saved.getCustomer()).isSameAs(customer);
+        assertThat(saved.getCompany()).isSameAs(company);
+        verify(orderEmailService).sendOrderCreated(saved);
+        verify(orderEmailService).sendCustomerOrderReceived(saved);
+    }
+
+    @Test
+    void createFailsWithoutSalesRepresentativeForBackOfficeUser() {
+        OrderRequest request = new OrderRequest(UUID.randomUUID(), null, null, null, LocalDate.now(), null, null,
+                List.of(new OrderRequest.OrderItemRequest(UUID.randomUUID(), BigDecimal.ONE)));
+
+        assertThatThrownBy(() -> orderService.create(request))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Sales representative");
     }
 
     @Test

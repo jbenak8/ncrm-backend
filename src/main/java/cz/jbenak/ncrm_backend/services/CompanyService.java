@@ -72,6 +72,21 @@ public class CompanyService {
                 .orElseGet(this::findAll);
     }
 
+    /**
+     * Lists strictly the companies assigned to the given user, without any fallback to the
+     * full list. Used for customer accounts which may only see their assigned companies.
+     */
+    @Transactional(readOnly = true)
+    public List<CompanyDto> findAssignedTo(String username) {
+        return userRepository.findByUsername(username)
+                .map(user -> user.getCompanies().stream()
+                        .filter(company -> !company.isDeleted())
+                        .sorted(Comparator.comparing(CompanyEntity::getName, String.CASE_INSENSITIVE_ORDER))
+                        .toList())
+                .map(companyMapper::toDtoList)
+                .orElseGet(List::of);
+    }
+
     @Transactional(readOnly = true)
     public CompanyDto findById(UUID id) {
         return companyMapper.toDto(getCompany(id));

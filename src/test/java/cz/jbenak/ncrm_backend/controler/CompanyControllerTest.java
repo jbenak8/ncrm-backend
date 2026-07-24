@@ -2,6 +2,7 @@ package cz.jbenak.ncrm_backend.controler;
 
 import cz.jbenak.ncrm_backend.configuration.SecurityConfig;
 import cz.jbenak.ncrm_backend.model.dto.company.CompanyLogoDto;
+import cz.jbenak.ncrm_backend.security.CustomerScope;
 import cz.jbenak.ncrm_backend.services.CompanyService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,6 +54,9 @@ class CompanyControllerTest {
     @MockitoBean
     private CompanyService companyService;
 
+    @MockitoBean
+    private CustomerScope customerScope;
+
     @Test
     void anonymousIsRejected() throws Exception {
         mockMvc.perform(get("/api/companies"))
@@ -90,9 +94,11 @@ class CompanyControllerTest {
 
     @Test
     @WithMockUser(roles = "CUSTOMER")
-    void customerCannotListCompanies() throws Exception {
+    void customerListsOnlyAssignedCompanies() throws Exception {
+        when(customerScope.isCustomer(any())).thenReturn(true);
+        when(companyService.findAssignedTo("user")).thenReturn(List.of());
         mockMvc.perform(get("/api/companies"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isOk());
     }
 
     @Test

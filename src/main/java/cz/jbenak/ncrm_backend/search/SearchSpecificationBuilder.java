@@ -76,6 +76,8 @@ public final class SearchSpecificationBuilder {
         Path<?> path = resolvePath(root, criterion.field());
         Class<?> type = path.getJavaType();
         return switch (criterion.operator()) {
+            case IS_NULL -> cb.isNull(path);
+            case IS_NOT_NULL -> cb.isNotNull(path);
             case CONTAINS -> cb.like(cb.lower(asString(path, type)), containsPattern(criterion.value()));
             case NOT_CONTAINS -> cb.notLike(cb.lower(asString(path, type)), containsPattern(criterion.value()));
             case EQ -> cb.equal(path, convert(criterion, type, criterion.value()));

@@ -50,4 +50,11 @@ public class DashboardController {
     public List<DashboardDtos.TopCustomer> topCustomers() {
         return dashboardService.topCustomers(10);
     }
+
+    /** Orders placed directly by logged-in customer users (without a sales representative). */
+    @GetMapping("/customer-orders")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'SALES_REPRESENTATIVE')")
+    public List<DashboardDtos.CustomerOrder> customerOrders() {
+        return dashboardService.customerOrders();
+    }
 }

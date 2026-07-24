@@ -37,6 +37,18 @@ class SearchCriterionTest {
     }
 
     @Test
+    void parsesNullCheckExpressionWithoutValue() {
+        SearchCriterion criterion = SearchCriterion.parse("salesRepresentative:isNull");
+        assertThat(criterion.field()).isEqualTo("salesRepresentative");
+        assertThat(criterion.operator()).isEqualTo(SearchOperator.IS_NULL);
+        assertThat(criterion.value()).isEmpty();
+
+        SearchCriterion withColon = SearchCriterion.parse("salesRepresentative:isNotNull:");
+        assertThat(withColon.operator()).isEqualTo(SearchOperator.IS_NOT_NULL);
+        assertThat(withColon.value()).isEmpty();
+    }
+
+    @Test
     void rejectsMalformedExpression() {
         assertThatThrownBy(() -> SearchCriterion.parse("name:contains"))
                 .isInstanceOf(IllegalArgumentException.class)

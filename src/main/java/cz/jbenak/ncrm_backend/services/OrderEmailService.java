@@ -45,6 +45,24 @@ public class OrderEmailService {
                         .formatted(order.getOrderNumber()));
     }
 
+    /**
+     * Notifies the company the order belongs to about an order placed directly by a customer
+     * user. The recipient is the company's e-mail address; when the order has no company or the
+     * company has no e-mail, the notification is skipped with a warning.
+     */
+    public void sendCustomerOrderReceived(OrderEntity order) {
+        String recipient = order.getCompany() == null ? null : order.getCompany().getEmail();
+        if (!isNotBlank(recipient)) {
+            log.warn("Order {} has no company e-mail address, customer order notification will not be sent",
+                    order.getOrderNumber());
+            return;
+        }
+        sendTo(recipient, order, "nCRM – zákaznická objednávka " + order.getOrderNumber(),
+                "<p>Dobrý den,</p><p>zákazník <strong>%s</strong> vytvořil objednávku <strong>%s</strong>.</p>"
+                        .formatted(order.getCustomer() == null ? "" : order.getCustomer().getName(),
+                                order.getOrderNumber()));
+    }
+
     /** Notifies the customer about a change of an existing order. */
     public void sendOrderUpdated(OrderEntity order) {
         send(order, "nCRM – změna objednávky " + order.getOrderNumber(),
@@ -65,6 +83,10 @@ public class OrderEmailService {
             log.warn("Order {} has no customer e-mail address, notification will not be sent", order.getOrderNumber());
             return;
         }
+        sendTo(recipient, order, subject, introduction);
+    }
+
+    private void sendTo(String recipient, OrderEntity order, String subject, String introduction) {
         try {
             var message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, "UTF-8");

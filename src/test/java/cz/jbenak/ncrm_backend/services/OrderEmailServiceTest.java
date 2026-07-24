@@ -1,5 +1,6 @@
 package cz.jbenak.ncrm_backend.services;
 
+import cz.jbenak.ncrm_backend.model.entity.company.CompanyEntity;
 import cz.jbenak.ncrm_backend.model.entity.customer.ContactPersonEntity;
 import cz.jbenak.ncrm_backend.model.entity.customer.CustomerEntity;
 import cz.jbenak.ncrm_backend.model.entity.order.OrderEntity;
@@ -78,6 +79,34 @@ class OrderEmailServiceTest {
         order.getCustomer().setEmail(null);
 
         orderEmailService.sendOrderCreated(order);
+
+        verify(mailSender, never()).send(any(MimeMessage.class));
+    }
+
+    @Test
+    void sendCustomerOrderReceivedGoesToCompanyEmail() throws Exception {
+        OrderEntity order = order();
+        CompanyEntity company = new CompanyEntity();
+        company.setName("Moje firma");
+        company.setEmail("orders@company.local");
+        order.setCompany(company);
+        MimeMessage message = new MimeMessage((Session) null);
+        when(mailSender.createMimeMessage()).thenReturn(message);
+
+        orderEmailService.sendCustomerOrderReceived(order);
+
+        ArgumentCaptor<MimeMessage> captor = ArgumentCaptor.forClass(MimeMessage.class);
+        verify(mailSender).send(captor.capture());
+        MimeMessage sent = captor.getValue();
+        assertThat(sent.getAllRecipients()[0]).hasToString("orders@company.local");
+        assertThat(sent.getSubject()).contains("zákaznická objednávka").contains("ORD-1");
+    }
+
+    @Test
+    void sendCustomerOrderReceivedIsSkippedWithoutCompanyEmail() {
+        OrderEntity order = order();
+
+        orderEmailService.sendCustomerOrderReceived(order);
 
         verify(mailSender, never()).send(any(MimeMessage.class));
     }

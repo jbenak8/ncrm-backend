@@ -8,6 +8,7 @@ import cz.jbenak.ncrm_backend.model.entity.order.OrderEntity;
 import cz.jbenak.ncrm_backend.model.entity.order.OrderItemEntity;
 import cz.jbenak.ncrm_backend.model.entity.quotation.QuotationEntity;
 import cz.jbenak.ncrm_backend.model.entity.quotation.QuotationItemEntity;
+import cz.jbenak.ncrm_backend.model.entity.security.UserEntity;
 import cz.jbenak.ncrm_backend.model.entity.store.ItemEntity;
 import cz.jbenak.ncrm_backend.model.mapper.OrderMapper;
 import cz.jbenak.ncrm_backend.repository.CompanyRepository;
@@ -16,6 +17,7 @@ import cz.jbenak.ncrm_backend.repository.CustomerRepository;
 import cz.jbenak.ncrm_backend.repository.ItemRepository;
 import cz.jbenak.ncrm_backend.repository.OrderRepository;
 import cz.jbenak.ncrm_backend.repository.SalesRepresentativeRepository;
+import cz.jbenak.ncrm_backend.repository.UserRepository;
 import cz.jbenak.ncrm_backend.search.SearchSpecificationBuilder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -50,7 +52,10 @@ public class OrderService {
     private static final Set<String> SEARCHABLE_FIELDS = Set.of(
             "orderNumber", "orderDate", "status", "totalPrice", "currency", "note",
             "customer.id", "customer.name", "company.id", "company.name",
-            "salesRepresentative.id", "salesRepresentative.code");
+            "salesRepresentative", "salesRepresentative.id", "salesRepresentative.code");
+
+    /** Name of the role marking customer user accounts. */
+    private static final String CUSTOMER_ROLE = "CUSTOMER";
 
     private final OrderRepository orderRepository;
     private final CustomerRepository customerRepository;
@@ -58,6 +63,7 @@ public class OrderService {
     private final ContactPersonRepository contactPersonRepository;
     private final SalesRepresentativeRepository salesRepresentativeRepository;
     private final ItemRepository itemRepository;
+    private final UserRepository userRepository;
     private final OrderMapper orderMapper;
     private final OrderEmailService orderEmailService;
     private final NumberSequenceService numberSequenceService;
@@ -94,27 +100,58 @@ public class OrderService {
     }
 
     public OrderDto create(OrderRequest request) {
+        return create(request, null);
+    }
+
+    /**
+     * Creates a new order on behalf of the given authenticated user. For back-office users the
+     * sales representative is mandatory. When the user has the {@code CUSTOMER} role, the order
+     * is created without a sales representative for the customer linked to the user account and
+     * a notification is additionally sent to the e-mail of the company the order belongs to.
+     */
+    public OrderDto create(OrderRequest request, String username) {
+        UserEntity customerUser = findCustomerUser(username);
         OrderEntity order = new OrderEntity();
         order.setOrderNumber(generateOrderNumber());
-        order.setCustomer(customerRepository.findById(request.customerId())
-                .orElseThrow(() -> new NotFoundException("Customer", request.customerId())));
-        order.setCompany(resolveCompany(request.companyId()));
+        if (customerUser != null) {
+            if (customerUser.getCustomer() == null) {
+                throw new IllegalStateException("User " + username + " is not linked to any customer");
+            }
+            order.setCustomer(customerUser.getCustomer());
+            order.setCompany(resolveCustomerCompany(customerUser, request.companyId()));
+        } else {
+            if (request.salesRepresentativeId() == null) {
+                throw new IllegalStateException("Sales representative is mandatory for back-office orders");
+            }
+            order.setCustomer(customerRepository.findById(request.customerId())
+                    .orElseThrow(() -> new NotFoundException("Customer", request.customerId())));
+            order.setCompany(resolveCompany(request.companyId()));
+            order.setSalesRepresentative(salesRepresentativeRepository.findById(request.salesRepresentativeId())
+                    .orElseThrow(() -> new NotFoundException("SalesRepresentative", request.salesRepresentativeId())));
+        }
         order.setContactPerson(request.contactPersonId() == null ? null
                 : contactPersonRepository.findById(request.contactPersonId())
                 .orElseThrow(() -> new NotFoundException("ContactPerson", request.contactPersonId())));
-        order.setSalesRepresentative(salesRepresentativeRepository.findById(request.salesRepresentativeId())
-                .orElseThrow(() -> new NotFoundException("SalesRepresentative", request.salesRepresentativeId())));
         order.setOrderDate(request.orderDate());
         order.setStatus(OrderEntity.OrderStatus.NEW);
         order.setCurrency(request.currency());
         order.setNote(request.note());
         applyItems(order, request);
         log.info("Created order {} for customer {} with {} item(s), total {} {}",
-                order.getOrderNumber(), request.customerId(), order.getItems().size(),
+                order.getOrderNumber(), order.getCustomer().getId(), order.getItems().size(),
                 order.getTotalPrice(), order.getCurrency());
         OrderEntity saved = orderRepository.save(order);
         orderEmailService.sendOrderCreated(saved);
+        if (customerUser != null) {
+            orderEmailService.sendCustomerOrderReceived(saved);
+        }
         return orderMapper.toDto(saved);
+    }
+
+    /** Orders created directly by customer users (no sales representative), shown on the dashboard. */
+    @Transactional(readOnly = true)
+    public List<OrderDto> findCustomerOrders() {
+        return orderMapper.toDtoList(orderRepository.findAllBySalesRepresentativeIsNullOrderByOrderDateDesc());
     }
 
     /**
@@ -164,8 +201,10 @@ public class OrderService {
         order.setContactPerson(request.contactPersonId() == null ? null
                 : contactPersonRepository.findById(request.contactPersonId())
                 .orElseThrow(() -> new NotFoundException("ContactPerson", request.contactPersonId())));
-        order.setSalesRepresentative(salesRepresentativeRepository.findById(request.salesRepresentativeId())
-                .orElseThrow(() -> new NotFoundException("SalesRepresentative", request.salesRepresentativeId())));
+        if (request.salesRepresentativeId() != null) {
+            order.setSalesRepresentative(salesRepresentativeRepository.findById(request.salesRepresentativeId())
+                    .orElseThrow(() -> new NotFoundException("SalesRepresentative", request.salesRepresentativeId())));
+        }
         order.setOrderDate(request.orderDate());
         order.setCurrency(request.currency());
         order.setNote(request.note());
@@ -230,6 +269,35 @@ public class OrderService {
                     .orElseThrow(() -> new NotFoundException("Company", companyId));
         }
         return companyRepository.findByDefaultCompanyTrueAndDeletedFalse().orElse(null);
+    }
+
+    /**
+     * Returns the user when they exist and have the {@code CUSTOMER} role, {@code null} otherwise.
+     */
+    private UserEntity findCustomerUser(String username) {
+        if (username == null) {
+            return null;
+        }
+        return userRepository.findByUsername(username)
+                .filter(user -> user.getRoles().stream().anyMatch(role -> CUSTOMER_ROLE.equals(role.getName())))
+                .orElse(null);
+    }
+
+    /**
+     * Resolves the own company for an order placed by a customer user: the explicitly requested
+     * company when it is one of the companies assigned to the user, otherwise the (single)
+     * assigned company, with the default company as a fallback.
+     */
+    private CompanyEntity resolveCustomerCompany(UserEntity customerUser, UUID companyId) {
+        if (companyId != null) {
+            return customerUser.getCompanies().stream()
+                    .filter(company -> company.getId().equals(companyId))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalStateException(
+                            "Company " + companyId + " is not assigned to user " + customerUser.getUsername()));
+        }
+        return customerUser.getCompanies().stream().findFirst()
+                .orElseGet(() -> resolveCompany(null));
     }
 
     private OrderEntity getOrder(UUID id) {

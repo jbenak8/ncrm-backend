@@ -59,9 +59,10 @@ public class OrderEntity extends AuditableEntity {
     @ToString.Exclude
     private ContactPersonEntity contactPerson;
 
-    // Sales representative who created / is responsible for the order.
+    // Sales representative who created / is responsible for the order. Null for orders
+    // created directly by a customer user; such orders are handled by the company itself.
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "sales_representative_id", nullable = false)
+    @JoinColumn(name = "sales_representative_id")
     @ToString.Exclude
     private SalesRepresentativeEntity salesRepresentative;
 

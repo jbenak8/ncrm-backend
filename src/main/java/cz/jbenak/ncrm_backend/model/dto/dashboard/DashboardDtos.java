@@ -1,6 +1,7 @@
 package cz.jbenak.ncrm_backend.model.dto.dashboard;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -71,6 +72,22 @@ public final class DashboardDtos {
     }
 
     /**
+     * Order placed directly by a logged-in customer user (without a sales representative),
+     * shown on the dashboard so the company can process it.
+     */
+    public record CustomerOrder(
+            UUID id,
+            String orderNumber,
+            LocalDate orderDate,
+            UUID customerId,
+            String customerName,
+            String status,
+            BigDecimal totalPrice,
+            String currency
+    ) {
+    }
+
+    /**
      * Composite payload with all dashboard widgets for a single frontend call.
      */
     public record OwnerDashboard(
@@ -78,7 +95,8 @@ public final class DashboardDtos {
             List<OrdersByMonth> ordersByMonth,
             List<SalesByRepresentative> salesByRepresentative,
             List<TopCustomer> topCustomers,
-            List<ActiveCampaign> activeCampaigns
+            List<ActiveCampaign> activeCampaigns,
+            List<CustomerOrder> customerOrders
     ) {
     }
 }

@@ -40,7 +40,7 @@ public class DashboardService {
     public DashboardDtos.OwnerDashboard ownerDashboard() {
         log.debug("Building the owner dashboard payload");
         return new DashboardDtos.OwnerDashboard(summary(), ordersByMonth(), salesByRepresentative(), topCustomers(10),
-                activeCampaigns());
+                activeCampaigns(), customerOrders());
     }
 
     public DashboardDtos.DashboardSummary summary() {
@@ -64,6 +64,9 @@ public class DashboardService {
 
     public List<DashboardDtos.SalesByRepresentative> salesByRepresentative() {
         return orderRepository.aggregateOrdersBySalesRepresentative().stream()
+                // Orders placed directly by customers have no sales representative; they are
+                // reported separately via customerOrders() and must be skipped here.
+                .filter(row -> row[0] != null)
                 .map(row -> {
                     UUID repId = (UUID) row[0];
                     String name = salesRepresentativeRepository.findById(repId)
@@ -88,6 +91,20 @@ public class DashboardService {
                         c.getCompany() == null ? null : c.getCompany().getId(),
                         c.getCompany() == null ? null : c.getCompany().getName(),
                         c.getScheduledAt(), c.getRecipients().size()))
+                .toList();
+    }
+
+    /**
+     * Orders placed directly by logged-in customer users (without a sales representative),
+     * so the company can pick them up and process them.
+     */
+    public List<DashboardDtos.CustomerOrder> customerOrders() {
+        return orderRepository.findAllBySalesRepresentativeIsNullOrderByOrderDateDesc().stream()
+                .map(o -> new DashboardDtos.CustomerOrder(o.getId(), o.getOrderNumber(), o.getOrderDate(),
+                        o.getCustomer() == null ? null : o.getCustomer().getId(),
+                        o.getCustomer() == null ? null : o.getCustomer().getName(),
+                        o.getStatus() == null ? null : o.getStatus().name(),
+                        o.getTotalPrice(), o.getCurrency()))
                 .toList();
     }
 
