@@ -3,6 +3,7 @@ package cz.jbenak.ncrm_backend.services;
 import cz.jbenak.ncrm_backend.model.dto.company.CompanyDto;
 import cz.jbenak.ncrm_backend.model.dto.company.CompanyLogoDto;
 import cz.jbenak.ncrm_backend.model.dto.company.CompanyRequest;
+import cz.jbenak.ncrm_backend.model.dto.company.CompanyStampDto;
 import cz.jbenak.ncrm_backend.model.entity.AddressEntity;
 import cz.jbenak.ncrm_backend.model.entity.company.CompanyEntity;
 import cz.jbenak.ncrm_backend.model.mapper.AddressMapper;
@@ -41,6 +42,9 @@ public class CompanyService {
     private static final Set<String> ALLOWED_LOGO_CONTENT_TYPES =
             Set.of("image/png", "image/jpeg", "image/gif", "image/webp", "image/svg+xml");
     private static final long MAX_LOGO_SIZE_BYTES = 2 * 1024L * 1024;
+    private static final Set<String> ALLOWED_STAMP_CONTENT_TYPES =
+            Set.of("image/png", "image/jpeg", "image/gif", "image/webp", "image/svg+xml");
+    private static final long MAX_STAMP_SIZE_BYTES = 2 * 1024L * 1024;
 
     private final CompanyRepository companyRepository;
     private final CountryRepository countryRepository;
@@ -173,6 +177,46 @@ public class CompanyService {
         entity.setLogo(null);
         entity.setLogoContentType(null);
         log.info("Deleted logo of company {} ({})", id, entity.getName());
+        return companyMapper.toDto(companyRepository.save(entity));
+    }
+
+    public CompanyDto uploadStamp(UUID id, MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("Stamp file must not be empty");
+        }
+        String contentType = file.getContentType();
+        if (contentType == null || !ALLOWED_STAMP_CONTENT_TYPES.contains(contentType)) {
+            throw new IllegalArgumentException("Unsupported stamp content type " + contentType
+                    + ". Allowed types are: " + String.join(", ", ALLOWED_STAMP_CONTENT_TYPES));
+        }
+        if (file.getSize() > MAX_STAMP_SIZE_BYTES) {
+            throw new IllegalArgumentException("Stamp file exceeds the maximum allowed size of " + MAX_STAMP_SIZE_BYTES + " bytes");
+        }
+        CompanyEntity entity = getCompany(id);
+        try {
+            entity.setStamp(file.getBytes());
+        } catch (IOException e) {
+            throw new UncheckedIOException("Could not read the uploaded stamp file", e);
+        }
+        entity.setStampContentType(contentType);
+        log.info("Uploaded stamp ({}, {} bytes) for company {} ({})", contentType, file.getSize(), id, entity.getName());
+        return companyMapper.toDto(companyRepository.save(entity));
+    }
+
+    @Transactional(readOnly = true)
+    public CompanyStampDto getStamp(UUID id) {
+        CompanyEntity entity = getCompany(id);
+        if (entity.getStamp() == null) {
+            throw new NotFoundException("Company " + id + " has no stamp");
+        }
+        return new CompanyStampDto(entity.getStamp(), entity.getStampContentType());
+    }
+
+    public CompanyDto deleteStamp(UUID id) {
+        CompanyEntity entity = getCompany(id);
+        entity.setStamp(null);
+        entity.setStampContentType(null);
+        log.info("Deleted stamp of company {} ({})", id, entity.getName());
         return companyMapper.toDto(companyRepository.save(entity));
     }
 

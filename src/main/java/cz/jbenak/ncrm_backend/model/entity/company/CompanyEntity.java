@@ -88,6 +88,13 @@ public class CompanyEntity {
     @Column(name = "logo_content_type", length = 100)
     private String logoContentType;
 
+    @Column(name = "stamp")
+    @ToString.Exclude
+    private byte[] stamp;
+
+    @Column(name = "stamp_content_type", length = 100)
+    private String stampContentType;
+
     @Column(name = "active")
     private boolean active = true;
 

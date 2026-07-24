@@ -165,6 +165,29 @@ class ReportServiceTest {
         assertIsPdf(reportService.invoicePrintReport(invoiceId));
     }
 
+    @Test
+    void invoicePrintReportProducesPdfWithCompanyStamp() throws Exception {
+        UUID invoiceId = UUID.randomUUID();
+        CompanyEntity company = company();
+        company.setStamp(pngLogo());
+        company.setStampContentType("image/png");
+        when(invoiceRepository.findById(invoiceId)).thenReturn(Optional.of(invoice(InvoiceEntity.PaymentType.TRANSFER)));
+        when(companyRepository.findByDefaultCompanyTrueAndDeletedFalse()).thenReturn(Optional.of(company));
+
+        assertIsPdf(reportService.invoicePrintReport(invoiceId));
+    }
+
+    @Test
+    void invoicePrintReportProducesPdfWhenStampIsUnreadable() {
+        UUID invoiceId = UUID.randomUUID();
+        CompanyEntity company = company();
+        company.setStamp(new byte[]{1, 2, 3});
+        when(invoiceRepository.findById(invoiceId)).thenReturn(Optional.of(invoice(InvoiceEntity.PaymentType.TRANSFER)));
+        when(companyRepository.findByDefaultCompanyTrueAndDeletedFalse()).thenReturn(Optional.of(company));
+
+        assertIsPdf(reportService.invoicePrintReport(invoiceId));
+    }
+
     private static byte[] pngLogo() throws Exception {
         java.awt.image.BufferedImage image = new java.awt.image.BufferedImage(40, 20, java.awt.image.BufferedImage.TYPE_INT_RGB);
         java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();

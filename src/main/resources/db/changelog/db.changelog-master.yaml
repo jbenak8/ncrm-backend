@@ -25,3 +25,5 @@ databaseChangeLog:
       file: db/changelog/changes/012-user-customer.yaml
   - include:
       file: db/changelog/changes/013-customer-orders.yaml
+  - include:
+      file: db/changelog/changes/014-company-stamp.yaml

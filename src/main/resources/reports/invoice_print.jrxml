@@ -16,6 +16,7 @@
 	<parameter name="VAT_RECAP" class="java.lang.String"/>
 	<parameter name="QR_IMAGE" class="java.awt.Image"/>
 	<parameter name="SUPPLIER_LOGO" class="java.awt.Image"/>
+	<parameter name="SUPPLIER_STAMP" class="java.awt.Image"/>
 	<parameter name="SUPPLIER_NAME" class="java.lang.String"/>
 	<parameter name="SUPPLIER_ADDRESS" class="java.lang.String"/>
 	<parameter name="SUPPLIER_REG_ID" class="java.lang.String"/>
@@ -215,6 +216,10 @@
 		</element>
 		<element kind="textField" uuid="c27cd739-7734-439f-b414-72b3d6633016" x="130" y="90" width="405" height="28" textAdjust="StretchHeight" blankWhenNull="true">
 			<expression><![CDATA[$P{NOTE} == null ? null : ("Poznámka: " + $P{NOTE})]]></expression>
+		</element>
+		<element kind="image" uuid="5f4c0a2e-7d1b-4c8a-9e3f-6a2b1c0d9e88" x="330" y="96" width="200" height="88" scaleImage="RetainShape" hImageAlign="Center" vImageAlign="Bottom">
+			<printWhenExpression><![CDATA[$P{SUPPLIER_STAMP} != null]]></printWhenExpression>
+			<expression><![CDATA[$P{SUPPLIER_STAMP}]]></expression>
 		</element>
 		<element kind="staticText" uuid="940c764a-ea4c-4685-b7c4-ab2b3cb28fc2" x="330" y="186" width="200" height="26" hTextAlign="Center">
 			<text><![CDATA[.......................................

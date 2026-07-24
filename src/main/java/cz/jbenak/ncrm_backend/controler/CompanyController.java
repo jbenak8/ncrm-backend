@@ -3,6 +3,7 @@ package cz.jbenak.ncrm_backend.controler;
 import cz.jbenak.ncrm_backend.model.dto.company.CompanyDto;
 import cz.jbenak.ncrm_backend.model.dto.company.CompanyLogoDto;
 import cz.jbenak.ncrm_backend.model.dto.company.CompanyRequest;
+import cz.jbenak.ncrm_backend.model.dto.company.CompanyStampDto;
 import cz.jbenak.ncrm_backend.security.CustomerScope;
 import cz.jbenak.ncrm_backend.services.CompanyService;
 import jakarta.validation.Valid;
@@ -98,5 +99,27 @@ public class CompanyController {
     @PreAuthorize("hasAnyRole('ADMIN', 'OWNER')")
     public void deleteLogo(@PathVariable UUID id) {
         companyService.deleteLogo(id);
+    }
+
+    @PutMapping(value = "/{id}/stamp", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER')")
+    public CompanyDto uploadStamp(@PathVariable UUID id, @RequestParam("file") MultipartFile file) {
+        return companyService.uploadStamp(id, file);
+    }
+
+    @GetMapping("/{id}/stamp")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'SALES_REPRESENTATIVE', 'CUSTOMER')")
+    public ResponseEntity<byte[]> getStamp(@PathVariable UUID id) {
+        CompanyStampDto stamp = companyService.getStamp(id);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(stamp.contentType()))
+                .body(stamp.content());
+    }
+
+    @DeleteMapping("/{id}/stamp")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER')")
+    public void deleteStamp(@PathVariable UUID id) {
+        companyService.deleteStamp(id);
     }
 }

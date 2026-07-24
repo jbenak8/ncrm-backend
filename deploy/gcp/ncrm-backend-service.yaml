@@ -1,0 +1,90 @@
+# Cloud Run service definition for the nCRM backend (Knative serving manifest).
+# Replace PROJECT_ID, REGION and the Cloud SQL instance name, then apply with:
+#   gcloud run services replace deploy/gcp/ncrm-backend-service.yaml --region REGION
+# Secrets are read from Google Secret Manager - see deploy/gcp/README.md for setup.
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: ncrm-backend
+  labels:
+    app: ncrm-backend
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: "1"
+        autoscaling.knative.dev/maxScale: "4"
+        # Attach the Cloud SQL for PostgreSQL instance via the built-in connector.
+        run.googleapis.com/cloudsql-instances: "PROJECT_ID:REGION:ncrm-postgres"
+        run.googleapis.com/startup-cpu-boost: "true"
+    spec:
+      serviceAccountName: ncrm-backend@PROJECT_ID.iam.gserviceaccount.com
+      containerConcurrency: 80
+      timeoutSeconds: 300
+      containers:
+        - image: REGION-docker.pkg.dev/PROJECT_ID/ncrm/ncrm-backend:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "prod"
+            # Connect through the Cloud SQL Unix socket mounted by the connector.
+            - name: DB_URL
+              value: "jdbc:postgresql:///nCRM?socketFactory=com.google.cloud.sql.postgres.SocketFactory&cloudSqlInstance=PROJECT_ID:REGION:ncrm-postgres"
+            - name: KEYCLOAK_ISSUER_URI
+              value: "https://keycloak.example.com/realms/ncrm"
+            - name: MAIL_HOST
+              value: "smtp.example.com"
+            - name: MAIL_PORT
+              value: "587"
+            - name: NCRM_CORS_ALLOWED_ORIGINS
+              value: "https://crm.example.com"
+            - name: DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: ncrm-db-username
+                  key: latest
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ncrm-db-password
+                  key: latest
+            - name: MAIL_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: ncrm-mail-username
+                  key: latest
+            - name: MAIL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ncrm-mail-password
+                  key: latest
+            - name: ANTHROPIC_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ncrm-anthropic-api-key
+                  key: latest
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ncrm-openai-api-key
+                  key: latest
+          resources:
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          startupProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            failureThreshold: 12
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+            periodSeconds: 30
+  traffic:
+    - percent: 100
+      latestRevision: true

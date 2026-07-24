@@ -21,6 +21,7 @@ import java.util.List;
 public interface CompanyMapper {
 
     @Mapping(target = "hasLogo", expression = "java(entity.getLogo() != null)")
+    @Mapping(target = "hasStamp", expression = "java(entity.getStamp() != null)")
     CompanyDto toDto(CompanyEntity entity);
 
     List<CompanyDto> toDtoList(List<CompanyEntity> entities);
@@ -32,6 +33,8 @@ public interface CompanyMapper {
     @Mapping(target = "deletedBy", ignore = true)
     @Mapping(target = "logo", ignore = true)
     @Mapping(target = "logoContentType", ignore = true)
+    @Mapping(target = "stamp", ignore = true)
+    @Mapping(target = "stampContentType", ignore = true)
     CompanyEntity toEntity(CompanyRequest request);
 
     @Mapping(target = "id", ignore = true)
@@ -41,5 +44,7 @@ public interface CompanyMapper {
     @Mapping(target = "deletedBy", ignore = true)
     @Mapping(target = "logo", ignore = true)
     @Mapping(target = "logoContentType", ignore = true)
+    @Mapping(target = "stamp", ignore = true)
+    @Mapping(target = "stampContentType", ignore = true)
     void updateEntity(CompanyRequest request, @MappingTarget CompanyEntity entity);
 }

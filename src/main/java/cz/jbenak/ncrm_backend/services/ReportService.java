@@ -195,6 +195,7 @@ public class ReportService {
         fillVatRecapParams(params, invoice);
         CompanyEntity company = companyRepository.findByDefaultCompanyTrueAndDeletedFalse().orElse(null);
         fillSupplierParams(params);
+        params.put("SUPPLIER_STAMP", company == null ? null : readSupplierStamp(company));
         fillCustomerParams(params, invoice.getOrder());
         fillPaymentQrParams(params, invoice, company);
         return exportPdf("reports/invoice_print.jrxml", params, data);
@@ -258,6 +259,19 @@ public class ReportService {
             return javax.imageio.ImageIO.read(new java.io.ByteArrayInputStream(company.getLogo()));
         } catch (Exception e) {
             log.warn("Could not read logo of company {} for the report", company.getId(), e);
+            return null;
+        }
+    }
+
+    /** Company stamp stored in the database decoded to an AWT image (or {@code null} when missing/unreadable). */
+    private java.awt.Image readSupplierStamp(CompanyEntity company) {
+        if (company.getStamp() == null || company.getStamp().length == 0) {
+            return null;
+        }
+        try {
+            return javax.imageio.ImageIO.read(new java.io.ByteArrayInputStream(company.getStamp()));
+        } catch (Exception e) {
+            log.warn("Could not read stamp of company {} for the report", company.getId(), e);
             return null;
         }
     }

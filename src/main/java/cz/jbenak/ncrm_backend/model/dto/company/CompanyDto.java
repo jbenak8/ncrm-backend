@@ -28,6 +28,7 @@ public record CompanyDto(
         String bic,
         boolean active,
         boolean defaultCompany,
-        boolean hasLogo
+        boolean hasLogo,
+        boolean hasStamp
 ) {
 }
