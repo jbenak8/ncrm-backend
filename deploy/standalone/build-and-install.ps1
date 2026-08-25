@@ -18,7 +18,7 @@
     Target installation directory. Default: C:\Program Files\ncrm-backend
 
 .PARAMETER Uninstall
-    Removes the Windows service (the installation directory is kept).
+    Removes the Windows service and deletes the installation directory from Program Files.
 
 .EXAMPLE
     powershell -ExecutionPolicy Bypass -File deploy\standalone\build-and-install.ps1
@@ -51,9 +51,15 @@ if ($Uninstall) {
     if (Test-Path $WinswExe) {
         & $WinswExe stop | Out-Null
         & $WinswExe uninstall
-        Write-Host "Service '$ServiceName' uninstalled. The directory '$InstallDir' was kept."
+        Write-Host "Service '$ServiceName' uninstalled."
     } else {
         Write-Host "Nothing to uninstall: '$WinswExe' not found."
+    }
+    if (Test-Path $InstallDir) {
+        Remove-Item -Path $InstallDir -Recurse -Force
+        Write-Host "Installation directory '$InstallDir' removed."
+    } else {
+        Write-Host "Installation directory '$InstallDir' not found."
     }
     return
 }
@@ -126,7 +132,8 @@ Set-Content -Path (Join-Path $InstallDir "$ServiceName-service.xml") -Value $Con
 Write-Host "==> Installing the Windows service..."
 if (Get-Service -Name $ServiceName -ErrorAction SilentlyContinue) {
     & $WinswExe stop | Out-Null
-    & $WinswExe refresh
+    & $WinswExe uninstall
+    & $WinswExe install
 } else {
     & $WinswExe install
 }

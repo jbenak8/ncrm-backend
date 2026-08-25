@@ -5,6 +5,9 @@
 # Usage (run from anywhere, requires root for the installation part):
 #   sudo deploy/standalone/build-and-install.sh
 #
+# Uninstallation (stops and removes the service, deletes /opt/ncrm-backend and /etc/ncrm-backend):
+#   sudo deploy/standalone/build-and-install.sh --uninstall
+#
 # What it does:
 #   1. Builds the executable jar with the Maven wrapper (tests skipped).
 #   2. Creates the system user "ncrm" and the directories /opt/ncrm-backend and /etc/ncrm-backend.
@@ -21,6 +24,42 @@ CONFIG_DIR="/etc/${SERVICE_NAME}"
 SERVICE_USER="ncrm"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+
+if [[ "${1:-}" == "--uninstall" ]]; then
+    if [[ "${EUID}" -ne 0 ]]; then
+        echo "ERROR: uninstallation requires root privileges, re-run with sudo." >&2
+        exit 1
+    fi
+    echo "==> Uninstalling ${SERVICE_NAME}..."
+    systemctl stop "${SERVICE_NAME}" 2>/dev/null || true
+    systemctl disable "${SERVICE_NAME}" 2>/dev/null || true
+    if [[ -f "/etc/systemd/system/${SERVICE_NAME}.service" ]]; then
+        rm -f "/etc/systemd/system/${SERVICE_NAME}.service"
+        systemctl daemon-reload
+        echo "==> Systemd unit removed."
+    else
+        echo "==> Systemd unit not found, nothing to remove."
+    fi
+    if [[ -d "${INSTALL_DIR}" ]]; then
+        rm -rf "${INSTALL_DIR}"
+        echo "==> Installation directory ${INSTALL_DIR} removed."
+    else
+        echo "==> Installation directory ${INSTALL_DIR} not found."
+    fi
+    if [[ -d "${CONFIG_DIR}" ]]; then
+        rm -rf "${CONFIG_DIR}"
+        echo "==> Configuration directory ${CONFIG_DIR} removed."
+    else
+        echo "==> Configuration directory ${CONFIG_DIR} not found."
+    fi
+    if id -u "${SERVICE_USER}" &>/dev/null; then
+        userdel "${SERVICE_USER}" 2>/dev/null || true
+        echo "==> Service user ${SERVICE_USER} removed."
+    fi
+    echo
+    echo "Uninstallation finished."
+    exit 0
+fi
 
 echo "==> Building ${SERVICE_NAME} (tests skipped)..."
 (cd "${PROJECT_DIR}" && ./mvnw -q package -DskipTests)
