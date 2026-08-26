@@ -15,7 +15,8 @@ import java.util.List;
  * @version 1.0
  * @since 2026-07-11
  * MapStruct mapper for orders and their items. Entities are created by the service
- * because item prices are resolved server-side.
+ * because item prices are resolved server-side. The exposed order total is the price
+ * including VAT (consistently with invoices), computed from the current item VAT rates.
  */
 @Mapper(config = MapstructConfig.class)
 public interface OrderMapper {
@@ -30,6 +31,8 @@ public interface OrderMapper {
     @Mapping(target = "salesRepresentativeId", source = "salesRepresentative.id")
     @Mapping(target = "salesRepresentativeName",
             expression = "java(entity.getSalesRepresentative() == null ? null : entity.getSalesRepresentative().getUser().getFirstName() + \" \" + entity.getSalesRepresentative().getUser().getLastName())")
+    @Mapping(target = "totalPrice",
+            expression = "java(cz.jbenak.ncrm_backend.model.entity.order.OrderTotals.totalGross(entity))")
     OrderDto toDto(OrderEntity entity);
 
     List<OrderDto> toDtoList(List<OrderEntity> entities);

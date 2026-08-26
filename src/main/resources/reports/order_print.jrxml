@@ -7,6 +7,9 @@
 	<parameter name="CURRENCY" class="java.lang.String"/>
 	<parameter name="NOTE" class="java.lang.String"/>
 	<parameter name="TOTAL_PRICE" class="java.math.BigDecimal"/>
+	<parameter name="TOTAL_NET" class="java.math.BigDecimal"/>
+	<parameter name="TOTAL_VAT" class="java.math.BigDecimal"/>
+	<parameter name="VAT_RECAP" class="java.lang.String"/>
 	<parameter name="SALES_REPRESENTATIVE" class="java.lang.String"/>
 	<parameter name="SUPPLIER_NAME" class="java.lang.String"/>
 	<parameter name="SUPPLIER_ADDRESS" class="java.lang.String"/>
@@ -131,17 +134,30 @@
 			<expression><![CDATA[" " + $V{PAGE_NUMBER}]]></expression>
 		</element>
 	</pageFooter>
-	<summary height="117">
+	<summary height="160">
 		<element kind="line" uuid="d060b44f-d631-44cb-96d6-a4948662771e" x="0" y="4" width="535" height="1"/>
-		<element kind="textField" uuid="9a7ca290-8b35-408a-9ccc-73b82a7c630f" x="285" y="12" width="250" height="20" fontSize="12.0" blankWhenNull="true" bold="true" hTextAlign="Right">
-			<expression><![CDATA["Celkem k úhradě: "
+		<element kind="textField" uuid="3c1de620-5a41-4a2b-9f13-6d8a20f14f01" x="0" y="12" width="535" height="28" textAdjust="StretchHeight" blankWhenNull="true" hTextAlign="Right">
+			<expression><![CDATA[$P{VAT_RECAP}]]></expression>
+		</element>
+		<element kind="textField" uuid="3c1de620-5a41-4a2b-9f13-6d8a20f14f02" x="285" y="44" width="250" height="16" blankWhenNull="true" hTextAlign="Right">
+			<expression><![CDATA["Celkem bez DPH: "
+                + ($P{TOTAL_NET} == null ? "" : new java.text.DecimalFormat("#,##0.00").format($P{TOTAL_NET}))
+                + ($P{CURRENCY} == null ? "" : (" " + $P{CURRENCY}))]]></expression>
+		</element>
+		<element kind="textField" uuid="3c1de620-5a41-4a2b-9f13-6d8a20f14f03" x="285" y="60" width="250" height="16" blankWhenNull="true" hTextAlign="Right">
+			<expression><![CDATA["DPH celkem: "
+                + ($P{TOTAL_VAT} == null ? "" : new java.text.DecimalFormat("#,##0.00").format($P{TOTAL_VAT}))
+                + ($P{CURRENCY} == null ? "" : (" " + $P{CURRENCY}))]]></expression>
+		</element>
+		<element kind="textField" uuid="9a7ca290-8b35-408a-9ccc-73b82a7c630f" x="285" y="78" width="250" height="20" fontSize="12.0" blankWhenNull="true" bold="true" hTextAlign="Right">
+			<expression><![CDATA["Celkem k úhradě (s DPH): "
                 + ($P{TOTAL_PRICE} == null ? "" : new java.text.DecimalFormat("#,##0.00").format($P{TOTAL_PRICE}))
                 + ($P{CURRENCY} == null ? "" : (" " + $P{CURRENCY}))]]></expression>
 		</element>
-		<element kind="textField" uuid="4a25b495-c773-44c8-afc2-0a3c44a68c6b" x="0" y="40" width="535" height="28" textAdjust="StretchHeight" blankWhenNull="true">
+		<element kind="textField" uuid="4a25b495-c773-44c8-afc2-0a3c44a68c6b" x="0" y="104" width="535" height="28" textAdjust="StretchHeight" blankWhenNull="true">
 			<expression><![CDATA[$P{NOTE} == null ? null : ("Poznámka: " + $P{NOTE})]]></expression>
 		</element>
-		<element kind="staticText" uuid="947a9b71-e74d-4568-a35d-f20dfe6f2081" x="335" y="70" width="200" height="14" hTextAlign="Center">
+		<element kind="staticText" uuid="947a9b71-e74d-4568-a35d-f20dfe6f2081" x="335" y="136" width="200" height="14" hTextAlign="Center">
 			<text><![CDATA[.......................................
 razítko a podpis]]></text>
 		</element>

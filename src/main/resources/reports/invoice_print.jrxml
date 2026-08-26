@@ -152,7 +152,7 @@
 			<element kind="textField" uuid="081fac39-9124-4b45-8f0a-263ed6e7e07b" x="205" y="0" width="55" height="14" pattern="#,##0.###" blankWhenNull="true" hTextAlign="Right">
 				<expression><![CDATA[$F{quantity}]]></expression>
 			</element>
-			<element kind="textField" uuid="6a10cbb5-272d-494f-b383-d08c6ba53ca6" x="260" y="0" width="30" height="14" blankWhenNull="true">
+			<element kind="textField" uuid="6a10cbb5-272d-494f-b383-d08c6ba53ca6" x="260" y="0" width="30" height="14" fontSize="7.0" blankWhenNull="true">
 				<expression><![CDATA[$F{unit} == null ? null : (" " + $F{unit})]]></expression>
 			</element>
 			<element kind="textField" uuid="98fcb85a-562a-45f2-8df6-06e5c76b157f" x="290" y="0" width="60" height="14" pattern="#,##0.00" blankWhenNull="true" hTextAlign="Right">

@@ -23,7 +23,8 @@ import java.util.List;
  *
  * Service integrating the AI agents (Claude / Anthropic and ChatGPT / OpenAI) via Spring AI.
  * Provides conversational chat and content generation (e.g. marketing campaign texts) for the frontend.
- * Claude is the default provider; the provider is selectable per request.
+ * Claude is the default provider; the provider is selectable per request. The agents have read-only
+ * access to real CRM data (store catalogue, item categories and orders) via {@link CrmAiTools}.
  */
 @Slf4j
 @Service
@@ -34,6 +35,7 @@ public class AiService {
 
     private final ObjectProvider<AnthropicChatModel> anthropicChatModel;
     private final ObjectProvider<OpenAiChatModel> openAiChatModel;
+    private final CrmAiTools crmAiTools;
 
     /**
      * Conversational chat with the selected AI agent. The conversation history is passed
@@ -42,7 +44,11 @@ public class AiService {
     public AiDtos.ChatResponse chat(AiDtos.ChatRequest request) {
         AiDtos.AiProvider provider = request.provider() == null ? DEFAULT_PROVIDER : request.provider();
         List<Message> messages = new ArrayList<>();
-        messages.add(new SystemMessage("You are a helpful assistant integrated in the nCRM application. Answer briefly and to the point."));
+        messages.add(new SystemMessage("""
+                You are a helpful assistant integrated in the nCRM application. Answer briefly and to the point.
+                You have tools to look up real CRM data: the store catalogue (items with their current prices),
+                the item category tree and customer orders. Use them whenever the user asks about products,
+                prices, item groups or orders instead of guessing."""));
         if (request.history() != null) {
             for (AiDtos.ChatMessage history : request.history()) {
                 messages.add("assistant".equalsIgnoreCase(history.role())
@@ -53,7 +59,7 @@ public class AiService {
         messages.add(new UserMessage(request.message()));
         log.info("AI chat request via {} with {} history message(s)", provider,
                 request.history() == null ? 0 : request.history().size());
-        String content = chatClient(provider).prompt().messages(messages).call().content();
+        String content = chatClient(provider).prompt().messages(messages).tools(crmAiTools).call().content();
         return new AiDtos.ChatResponse(content, provider);
     }
 
@@ -68,13 +74,18 @@ public class AiService {
                 Target audience: %s
                 Tone: %s
                 Language: %s
+                You have tools to look up real CRM data: the store catalogue (items with their current prices),
+                the item category tree and customer orders. Use them to base the campaign on real products,
+                real names and real prices. When the topic asks for a discount (e.g. "5%% cheaper"),
+                compute the discounted price from the item's current price and state both prices.
+                Do not invent products or prices that are not in the catalogue.
                 Return only the e-mail body as HTML without any explanation.
                 """.formatted(request.topic(),
                 request.audience() == null ? "existing B2B customers" : request.audience(),
                 request.tone() == null ? "professional and friendly" : request.tone(),
                 request.language() == null ? "Czech" : request.language());
         log.info("AI content generation via {} for topic '{}'", provider, request.topic());
-        String content = chatClient(provider).prompt().user(prompt).call().content();
+        String content = chatClient(provider).prompt().user(prompt).tools(crmAiTools).call().content();
         return new AiDtos.ChatResponse(content, provider);
     }
 
