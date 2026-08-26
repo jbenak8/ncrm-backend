@@ -6,6 +6,7 @@ import cz.jbenak.ncrm_backend.model.entity.customer.CustomerEntity;
 import cz.jbenak.ncrm_backend.model.entity.invoice.InvoiceEntity;
 import cz.jbenak.ncrm_backend.model.entity.invoice.InvoiceItemEntity;
 import cz.jbenak.ncrm_backend.model.entity.order.OrderEntity;
+import cz.jbenak.ncrm_backend.model.entity.order.OrderTotals;
 import cz.jbenak.ncrm_backend.repository.CompanyRepository;
 import cz.jbenak.ncrm_backend.repository.InvoiceRepository;
 import cz.jbenak.ncrm_backend.repository.OrderRepository;
@@ -22,11 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.InputStream;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -145,7 +142,10 @@ public class ReportService {
                 : STATUS_LABELS.getOrDefault(order.getStatus(), order.getStatus().name()));
         params.put("CURRENCY", currencySymbol(order.getCurrency()));
         params.put("NOTE", order.getNote());
-        params.put("TOTAL_PRICE", order.getTotalPrice());
+        params.put("TOTAL_NET", OrderTotals.totalNet(order));
+        params.put("TOTAL_VAT", OrderTotals.totalVat(order));
+        params.put("TOTAL_PRICE", OrderTotals.totalGross(order));
+        fillOrderVatRecapParams(params, order);
         params.put("SALES_REPRESENTATIVE", resolveSalesRepresentativeName(order));
         fillSupplierParams(params);
         fillCustomerParams(params, order);
@@ -199,6 +199,28 @@ public class ReportService {
         fillCustomerParams(params, invoice.getOrder());
         fillPaymentQrParams(params, invoice, company);
         return exportPdf("reports/invoice_print.jrxml", params, data);
+    }
+
+    /** VAT recapitulation of the printed order: net, VAT and gross amounts aggregated by the VAT rate. */
+    private void fillOrderVatRecapParams(Map<String, Object> params, OrderEntity order) {
+        StringBuilder recap = new StringBuilder();
+        order.getItems().stream()
+                .collect(java.util.stream.Collectors.groupingBy(
+                        item -> OrderTotals.vatRate(item) == null
+                                ? java.math.BigDecimal.ZERO : Objects.requireNonNull(OrderTotals.vatRate(item)).stripTrailingZeros(),
+                        java.util.TreeMap::new,
+                        java.util.stream.Collectors.toList()))
+                .forEach((rate, items) -> {
+                    java.math.BigDecimal net = items.stream().map(OrderTotals::lineNet)
+                            .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+                    java.math.BigDecimal vat = items.stream().map(OrderTotals::lineVat)
+                            .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+                    java.text.DecimalFormat money = new java.text.DecimalFormat("#,##0.00");
+                    recap.append("Sazba ").append(rate.toPlainString()).append(" %: základ ")
+                            .append(money.format(net)).append(", DPH ").append(money.format(vat))
+                            .append(", celkem ").append(money.format(net.add(vat))).append('\n');
+                });
+        params.put("VAT_RECAP", recap.isEmpty() ? null : recap.toString());
     }
 
     /** VAT recapitulation: net, VAT and gross amounts aggregated by the VAT rate. */
@@ -310,9 +332,10 @@ public class ReportService {
         if (address == null) {
             return null;
         }
+        String houseNumber = isNotBlank(address.getHouseNumber()) ? address.getHouseNumber() : address.getStreetNumber();
         String numbers = isNotBlank(address.getHouseNumber()) && isNotBlank(address.getStreetNumber())
                 ? address.getHouseNumber() + "/" + address.getStreetNumber()
-                : isNotBlank(address.getHouseNumber()) ? address.getHouseNumber() : address.getStreetNumber();
+                : houseNumber;
         String street = joinNonBlank(" ", address.getStreet(), numbers);
         return joinNonBlank(", ", street, joinNonBlank(" ", address.getZipCode(), address.getCity()));
     }
@@ -343,8 +366,8 @@ public class ReportService {
         }
         try {
             return java.util.Currency.getInstance(currencyCode.trim().toUpperCase(java.util.Locale.ROOT))
-                    .getSymbol(new java.util.Locale("cs", "CZ"));
-        } catch (IllegalArgumentException e) {
+                    .getSymbol(java.util.Locale.of("cs", "CZ"));
+        } catch (IllegalArgumentException _) {
             log.warn("Unknown currency code '{}', using it as-is on the report", currencyCode);
             return currencyCode;
         }

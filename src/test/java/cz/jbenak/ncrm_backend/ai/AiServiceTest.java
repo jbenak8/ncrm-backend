@@ -38,9 +38,11 @@ class AiServiceTest {
     private AnthropicChatModel anthropicChatModel;
     @Mock
     private OpenAiChatModel openAiChatModel;
+    @Mock
+    private CrmAiTools crmAiTools;
 
     private AiService service() {
-        return new AiService(anthropicProvider, openAiProvider);
+        return new AiService(anthropicProvider, openAiProvider, crmAiTools);
     }
 
     private static ChatResponse response(String content) {
