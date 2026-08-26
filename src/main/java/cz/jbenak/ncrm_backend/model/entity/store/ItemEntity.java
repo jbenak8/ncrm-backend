@@ -38,7 +38,7 @@ public class ItemEntity extends AuditableEntity {
     @Column(name = "name", nullable = false)
     private String name;
 
-    @Column(name = "description")
+    @Column(name = "description", length = Integer.MAX_VALUE)
     private String description;
 
     @Enumerated(EnumType.STRING)

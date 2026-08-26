@@ -1,0 +1,10 @@
+databaseChangeLog:
+
+  - changeSet:
+      id: 015-01-item-description
+      author: jbenak
+      changes:
+        - modifyDataType:
+            tableName: items
+            columnName: description
+            newDataType: text
