@@ -6,6 +6,7 @@ import cz.jbenak.ncrm_backend.model.entity.invoice.InvoiceEntity;
 import cz.jbenak.ncrm_backend.model.entity.order.OrderEntity;
 import jakarta.mail.Session;
 import jakarta.mail.internet.MimeMessage;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -14,6 +15,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mail.MailSendException;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -39,6 +41,12 @@ class InvoiceEmailServiceTest {
     @InjectMocks
     private InvoiceEmailService invoiceEmailService;
 
+    @BeforeEach
+    void setUpSender() {
+        ReflectionTestUtils.setField(invoiceEmailService, "mailFromAddress", "noreply@ncrm.cz");
+        ReflectionTestUtils.setField(invoiceEmailService, "mailFromName", "nCRM");
+    }
+
     @Test
     void sendInvoiceSendsPdfToContactPerson() throws Exception {
         InvoiceEntity invoice = invoice();
@@ -53,6 +61,7 @@ class InvoiceEmailServiceTest {
         ArgumentCaptor<MimeMessage> captor = ArgumentCaptor.forClass(MimeMessage.class);
         verify(mailSender).send(captor.capture());
         MimeMessage sent = captor.getValue();
+        assertThat(sent.getFrom()[0]).hasToString("nCRM <noreply@ncrm.cz>");
         assertThat(sent.getAllRecipients()[0]).hasToString("contact@acme.cz");
         assertThat(sent.getSubject()).contains("faktura").contains("2026-000042");
     }

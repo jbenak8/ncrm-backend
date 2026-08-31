@@ -35,7 +35,8 @@ printf 'my-password' | gcloud secrets versions add ncrm-db-password --data-file 
 ## 2. Configure the service
 
 Edit `deploy/gcp/ncrm-backend-service.yaml` and replace `PROJECT_ID`, `REGION` and the
-example values of `KEYCLOAK_ISSUER_URI`, `MAIL_HOST`/`MAIL_PORT` and
+example values of `KEYCLOAK_ISSUER_URI`, `MAIL_HOST`/`MAIL_PORT`,
+`MAIL_FROM_ADDRESS`/`MAIL_FROM_NAME` and
 `NCRM_CORS_ALLOWED_ORIGINS`. The `DB_URL` already points to the Cloud SQL instance via
 the Cloud SQL Java connector, no public IP is required.
 

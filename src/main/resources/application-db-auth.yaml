@@ -15,6 +15,9 @@ spring:
     password: ${MAIL_PASSWORD}
     properties:
       mail:
+        from:
+          address: ${MAIL_FROM_ADDRESS}
+          name: ${MAIL_FROM_NAME}
         smtp:
           auth: true
           starttls:

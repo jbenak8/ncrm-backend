@@ -9,6 +9,7 @@ import jakarta.mail.BodyPart;
 import jakarta.mail.Session;
 import jakarta.mail.internet.MimeMessage;
 import jakarta.mail.internet.MimeMultipart;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -17,6 +18,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mail.MailSendException;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
 import java.time.Month;
@@ -43,6 +45,12 @@ class MeetingEmailServiceTest {
     @InjectMocks
     private MeetingEmailService meetingEmailService;
 
+    @BeforeEach
+    void setUpSender() {
+        ReflectionTestUtils.setField(meetingEmailService, "mailFromAddress", "noreply@ncrm.cz");
+        ReflectionTestUtils.setField(meetingEmailService, "mailFromName", "nCRM");
+    }
+
     @Test
     void sendMeetingCreatedSendsIcsToCustomerAndRepresentative() throws Exception {
         MeetingEntity meeting = meeting();
@@ -55,6 +63,7 @@ class MeetingEmailServiceTest {
         verify(mailSender).send(captor.capture());
         MimeMessage sent = captor.getValue();
         sent.saveChanges();
+        assertThat(sent.getFrom()[0]).hasToString("nCRM <noreply@ncrm.cz>");
         assertThat(sent.getAllRecipients()).extracting(Object::toString)
                 .containsExactly("customer@acme.cz", "rep@ncrm.cz");
         assertThat(sent.getSubject()).contains("pozvánka na schůzku").contains("Introduction");

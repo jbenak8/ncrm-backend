@@ -15,6 +15,10 @@ parameters:
     value: api-crm.apps.example.com
   - name: KEYCLOAK_ISSUER_URI
     value: https://keycloak.example.com/realms/ncrm
+  - name: MAIL_FROM_ADDRESS
+    value: noreply@example.com
+  - name: MAIL_FROM_NAME
+    value: nCRM
 objects:
   - apiVersion: apps/v1
     kind: Deployment
@@ -43,6 +47,10 @@ objects:
                   value: prod
                 - name: KEYCLOAK_ISSUER_URI
                   value: ${KEYCLOAK_ISSUER_URI}
+                - name: MAIL_FROM_ADDRESS
+                  value: ${MAIL_FROM_ADDRESS}
+                - name: MAIL_FROM_NAME
+                  value: ${MAIL_FROM_NAME}
               envFrom:
                 - secretRef:
                     name: ncrm-backend-secrets

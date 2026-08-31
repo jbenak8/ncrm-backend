@@ -49,6 +49,9 @@ spring:
     protocol: smtp
     properties:
         mail:
+            from:
+              address: ${MAIL_FROM_ADDRESS}
+              name: ${MAIL_FROM_NAME}
             auth: ${MAIL_SMTP_AUTH}
             starttls:
                 enable: ${MAIL_SMTP_STARTTLS_ENABLE}

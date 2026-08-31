@@ -10,6 +10,8 @@ data:
   KEYCLOAK_ISSUER_URI: "https://keycloak.example.com/realms/ncrm"
   MAIL_HOST: "smtp.example.com"
   MAIL_PORT: "587"
+  MAIL_FROM_ADDRESS: "noreply@example.com"
+  MAIL_FROM_NAME: "nCRM"
   NCRM_CORS_ALLOWED_ORIGINS: "https://crm.example.com"
 ---
 apiVersion: v1

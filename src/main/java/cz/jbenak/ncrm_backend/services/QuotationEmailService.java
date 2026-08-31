@@ -2,8 +2,10 @@ package cz.jbenak.ncrm_backend.services;
 
 import cz.jbenak.ncrm_backend.model.entity.quotation.QuotationEntity;
 import cz.jbenak.ncrm_backend.model.entity.quotation.QuotationItemEntity;
+import jakarta.mail.internet.InternetAddress;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -24,6 +26,12 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 public class QuotationEmailService {
+
+    @Value("${spring.mail.properties.mail.from.name}")
+    private String mailFromName;
+
+    @Value("${spring.mail.properties.mail.from.address}")
+    private String mailFromAddress;
 
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("d.M.yyyy");
 
@@ -54,6 +62,7 @@ public class QuotationEmailService {
         try {
             var message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, "UTF-8");
+            helper.setFrom(new InternetAddress(mailFromAddress, mailFromName));
             helper.setTo(recipient);
             helper.setSubject(subject);
             helper.setText("<p>Dobrý den,</p><p>zasíláme Vám cenovou nabídku <strong>%s</strong>.</p>"
