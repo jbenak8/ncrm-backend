@@ -2,8 +2,10 @@ package cz.jbenak.ncrm_backend.services;
 
 import cz.jbenak.ncrm_backend.model.entity.AddressEntity;
 import cz.jbenak.ncrm_backend.model.entity.customer.MeetingEntity;
+import jakarta.mail.internet.InternetAddress;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -34,6 +36,12 @@ import java.util.Set;
 @Service
 @RequiredArgsConstructor
 public class MeetingEmailService {
+
+    @Value("${spring.mail.properties.mail.from.name}")
+    private String mailFromName;
+
+    @Value("${spring.mail.properties.mail.from.address}")
+    private String mailFromAddress;
 
     private static final DateTimeFormatter ICS_UTC_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'");
     private static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("d.M.yyyy H:mm");
@@ -69,6 +77,7 @@ public class MeetingEmailService {
         try {
             var message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setFrom(new InternetAddress(mailFromAddress, mailFromName));
             helper.setTo(recipients.toArray(String[]::new));
             helper.setSubject(subject);
             helper.setText(introduction + buildMeetingSummary(meeting), true);

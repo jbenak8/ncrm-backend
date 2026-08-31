@@ -2,8 +2,10 @@ package cz.jbenak.ncrm_backend.services;
 
 import cz.jbenak.ncrm_backend.model.entity.invoice.InvoiceEntity;
 import cz.jbenak.ncrm_backend.model.entity.order.OrderEntity;
+import jakarta.mail.internet.InternetAddress;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -27,6 +29,12 @@ import java.time.format.DateTimeFormatter;
 @RequiredArgsConstructor
 public class InvoiceEmailService {
 
+    @Value("${spring.mail.properties.mail.from.name}")
+    private String mailFromName;
+
+    @Value("${spring.mail.properties.mail.from.address}")
+    private String mailFromAddress;
+
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("d.M.yyyy");
     public static final String BR = "<br/>";
 
@@ -42,6 +50,7 @@ public class InvoiceEmailService {
         try {
             var message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setFrom(new InternetAddress(mailFromAddress, mailFromName));
             helper.setTo(recipient);
             helper.setSubject("nCRM – faktura " + invoice.getInvoiceNumber());
             helper.setText(buildBody(invoice), true);

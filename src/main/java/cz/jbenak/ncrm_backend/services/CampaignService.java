@@ -14,9 +14,11 @@ import cz.jbenak.ncrm_backend.repository.CompanyRepository;
 import cz.jbenak.ncrm_backend.repository.CustomerRepository;
 import cz.jbenak.ncrm_backend.repository.UserRepository;
 import cz.jbenak.ncrm_backend.search.SearchSpecificationBuilder;
+import jakarta.mail.internet.InternetAddress;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.document.Document;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.ai.reader.pdf.PagePdfDocumentReader;
@@ -49,6 +51,12 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Transactional
 public class CampaignService {
+
+    @Value("${spring.mail.properties.mail.from.name}")
+    private String mailFromName;
+
+    @Value("${spring.mail.properties.mail.from.address}")
+    private String mailFromAddress;
 
     /** Attribute paths of the campaign entity that can be used by the generic search API. */
     private static final Set<String> SEARCHABLE_FIELDS = Set.of(
@@ -158,6 +166,7 @@ public class CampaignService {
             try {
                 var message = mailSender.createMimeMessage();
                 MimeMessageHelper helper = new MimeMessageHelper(message, "UTF-8");
+                helper.setFrom(new InternetAddress(mailFromAddress, mailFromName));
                 helper.setTo(recipient.getEmail());
                 helper.setSubject(campaign.getSubject());
                 helper.setText(campaign.getBody(), true);

@@ -13,6 +13,7 @@ import cz.jbenak.ncrm_backend.repository.CustomerRepository;
 import cz.jbenak.ncrm_backend.repository.UserRepository;
 import jakarta.mail.Session;
 import jakarta.mail.internet.MimeMessage;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -22,6 +23,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mail.MailSendException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
 import java.util.Optional;
@@ -59,6 +61,12 @@ class CampaignServiceTest {
 
     @InjectMocks
     private CampaignService campaignService;
+
+    @BeforeEach
+    void setUpSender() {
+        ReflectionTestUtils.setField(campaignService, "mailFromAddress", "noreply@ncrm.cz");
+        ReflectionTestUtils.setField(campaignService, "mailFromName", "nCRM");
+    }
 
     private CustomerEntity customer(String email) {
         CustomerEntity customer = new CustomerEntity();
@@ -134,7 +142,7 @@ class CampaignServiceTest {
     }
 
     @Test
-    void sendDeliversEmailsAndMarksCampaignSent() {
+    void sendDeliversEmailsAndMarksCampaignSent() throws Exception {
         UUID id = UUID.randomUUID();
         CampaignEntity campaign = CampaignEntity.builder()
                 .subject("Sale").body("<p>Hi</p>").build();
@@ -150,7 +158,11 @@ class CampaignServiceTest {
         assertThat(campaign.getSentAt()).isNotNull();
         assertThat(campaign.getRecipients().getFirst().getDeliveryStatus())
                 .isEqualTo(CampaignRecipientEntity.DeliveryStatus.SENT);
-        verify(mailSender).send(any(MimeMessage.class));
+        ArgumentCaptor<MimeMessage> captor = ArgumentCaptor.forClass(MimeMessage.class);
+        verify(mailSender).send(captor.capture());
+        MimeMessage sent = captor.getValue();
+        assertThat(sent.getFrom()[0]).hasToString("nCRM <noreply@ncrm.cz>");
+        assertThat(sent.getAllRecipients()[0]).hasToString("a@acme.cz");
     }
 
     @Test

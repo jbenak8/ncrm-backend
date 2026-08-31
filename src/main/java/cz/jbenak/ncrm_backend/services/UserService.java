@@ -17,8 +17,10 @@ import cz.jbenak.ncrm_backend.repository.SalesRepresentativeRepository;
 import cz.jbenak.ncrm_backend.repository.UserRepository;
 import cz.jbenak.ncrm_backend.search.SearchSpecificationBuilder;
 import cz.jbenak.ncrm_backend.security.PasswordPolicy;
+import jakarta.mail.internet.InternetAddress;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -47,6 +49,12 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Transactional
 public class UserService {
+
+    @Value("${spring.mail.properties.mail.from.name}")
+    private String mailFromName;
+
+    @Value("${spring.mail.properties.mail.from.address}")
+    private String mailFromAddress;
 
     /** Attribute paths of the user entity that can be used by the generic search API. */
     private static final Set<String> SEARCHABLE_FIELDS = Set.of(
@@ -202,6 +210,7 @@ public class UserService {
         try {
             var message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, "UTF-8");
+            helper.setFrom(new InternetAddress(mailFromAddress, mailFromName));
             helper.setTo(user.getEmail());
             helper.setSubject("nCRM – přihlašovací údaje");
             helper.setText("""

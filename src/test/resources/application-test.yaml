@@ -20,3 +20,6 @@ ncrm:
   security:
     local-users:
       password: test
+
+MAIL_FROM_ADDRESS: test@example.com
+MAIL_FROM_NAME: Test

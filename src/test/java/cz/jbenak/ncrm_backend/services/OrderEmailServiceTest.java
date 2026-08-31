@@ -8,6 +8,7 @@ import cz.jbenak.ncrm_backend.model.entity.order.OrderItemEntity;
 import cz.jbenak.ncrm_backend.model.entity.store.ItemEntity;
 import jakarta.mail.Session;
 import jakarta.mail.internet.MimeMessage;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -16,6 +17,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mail.MailSendException;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -41,6 +43,12 @@ class OrderEmailServiceTest {
     @InjectMocks
     private OrderEmailService orderEmailService;
 
+    @BeforeEach
+    void setUpSender() {
+        ReflectionTestUtils.setField(orderEmailService, "mailFromAddress", "noreply@ncrm.cz");
+        ReflectionTestUtils.setField(orderEmailService, "mailFromName", "nCRM");
+    }
+
     @Test
     void sendOrderCreatedSendsSummaryToContactPerson() throws Exception {
         OrderEntity order = order();
@@ -55,6 +63,7 @@ class OrderEmailServiceTest {
         ArgumentCaptor<MimeMessage> captor = ArgumentCaptor.forClass(MimeMessage.class);
         verify(mailSender).send(captor.capture());
         MimeMessage sent = captor.getValue();
+        assertThat(sent.getFrom()[0]).hasToString("nCRM <noreply@ncrm.cz>");
         assertThat(sent.getAllRecipients()[0]).hasToString("contact@acme.cz");
         assertThat(sent.getSubject()).contains("nová objednávka").contains("ORD-1");
         assertThat(sent.getContent().toString()).contains("Papír").contains("100.00").contains("CZK");
