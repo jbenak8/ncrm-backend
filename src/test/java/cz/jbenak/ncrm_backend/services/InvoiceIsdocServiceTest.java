@@ -10,7 +10,10 @@ import cz.jbenak.ncrm_backend.model.entity.order.OrderEntity;
 import org.junit.jupiter.api.Test;
 import org.w3c.dom.Document;
 
+import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.stream.StreamSource;
+import javax.xml.validation.SchemaFactory;
 import java.io.ByteArrayInputStream;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
@@ -61,11 +64,25 @@ class InvoiceIsdocServiceTest {
     }
 
     @Test
+    void generateProducesXmlValidAgainstIsdocSchema() throws Exception {
+        var schemaFactory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
+        var schema = schemaFactory.newSchema(new StreamSource(
+                getClass().getResourceAsStream("/isdoc/isdoc-invoice-6.0.1.xsd")));
+        var validator = schema.newValidator();
+
+        validator.validate(new StreamSource(new ByteArrayInputStream(
+                invoiceIsdocService.generate(invoice(InvoiceEntity.PaymentType.TRANSFER)))));
+        validator.validate(new StreamSource(new ByteArrayInputStream(
+                invoiceIsdocService.generate(invoice(InvoiceEntity.PaymentType.CASH)))));
+    }
+
+    @Test
     void generateContainsBankDetailsForTransfer() {
         String xml = new String(invoiceIsdocService.generate(invoice(InvoiceEntity.PaymentType.TRANSFER)),
                 StandardCharsets.UTF_8);
 
         assertThat(xml)
+                .contains("<PaidAmount>121.00</PaidAmount>")
                 .contains("<PaymentMeansCode>42</PaymentMeansCode>")
                 .contains("<ID>123456789</ID>")
                 .contains("<BankCode>0100</BankCode>")
@@ -80,6 +97,7 @@ class InvoiceIsdocServiceTest {
 
         assertThat(xml)
                 .contains("<PaymentMeansCode>10</PaymentMeansCode>")
+                .contains("<DocumentID>2026-000042</DocumentID>")
                 .doesNotContain("<BankCode>")
                 .doesNotContain("<VariableSymbol>");
     }

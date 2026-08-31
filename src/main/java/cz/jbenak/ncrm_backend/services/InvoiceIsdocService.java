@@ -85,8 +85,8 @@ public class InvoiceIsdocService {
                 : UUID.randomUUID().toString());
         date(doc, root, "IssueDate", invoice.getIssueDate());
         date(doc, root, "TaxPointDate", invoice.getTaxDate());
-        text(doc, root, "VATApplicable", invoice.getTotalVat() != null
-                && invoice.getTotalVat().signum() != 0 ? "true" : "false");
+        text(doc, root, "VATApplicable", Boolean.toString(invoice.getTotalVat() != null
+                && invoice.getTotalVat().signum() != 0));
         text(doc, root, "ElectronicPossibilityAgreementReference", "");
         if (isNotBlank(invoice.getNote())) {
             text(doc, root, "Note", invoice.getNote());
@@ -230,36 +230,36 @@ public class InvoiceIsdocService {
     private void appendPaymentMeans(Document doc, Element root, InvoiceEntity invoice) {
         Element paymentMeans = child(doc, root, "PaymentMeans");
         Element payment = child(doc, paymentMeans, "Payment");
-        text(doc, payment, "PartialAmount", amount(invoice.getTotalGross()));
+        text(doc, payment, "PaidAmount", amount(invoice.getTotalGross()));
         // PaymentMeansCode 10 = in cash, 42 = payment to a bank account.
         boolean cash = invoice.getPaymentType() == InvoiceEntity.PaymentType.CASH;
         text(doc, payment, "PaymentMeansCode", cash ? "10" : "42");
         Element details = child(doc, payment, "Details");
-        if (invoice.getDueDate() != null) {
-            date(doc, details, "PaymentDueDate", invoice.getDueDate());
-        }
-        CompanyEntity company = invoice.getOrder() != null ? invoice.getOrder().getCompany() : null;
-        if (!cash && company != null) {
-            if (isNotBlank(company.getBankAccount())) {
+        if (cash) {
+            // Cash branch of DetailsType requires DocumentID and IssueDate.
+            text(doc, details, "DocumentID", invoice.getInvoiceNumber());
+            date(doc, details, "IssueDate", invoice.getIssueDate());
+        } else {
+            // Money transfer branch requires PaymentDueDate and the whole BankAccount group.
+            date(doc, details, "PaymentDueDate",
+                    invoice.getDueDate() != null ? invoice.getDueDate() : invoice.getIssueDate());
+            CompanyEntity company = invoice.getOrder() != null ? invoice.getOrder().getCompany() : null;
+            String accountNumber = "";
+            String bankCode = "";
+            if (company != null && isNotBlank(company.getBankAccount())) {
                 String account = company.getBankAccount();
                 int slash = account.indexOf('/');
-                text(doc, details, "ID", slash > 0 ? account.substring(0, slash) : account);
-                if (slash > 0) {
-                    text(doc, details, "BankCode", account.substring(slash + 1));
-                }
+                accountNumber = slash > 0 ? account.substring(0, slash) : account;
+                bankCode = slash > 0 ? account.substring(slash + 1) : "";
             }
-            if (isNotBlank(company.getBankName())) {
-                text(doc, details, "Name", company.getBankName());
+            text(doc, details, "ID", accountNumber);
+            text(doc, details, "BankCode", bankCode);
+            text(doc, details, "Name", company != null ? company.getBankName() : "");
+            text(doc, details, "IBAN", company != null ? company.getIban() : "");
+            text(doc, details, "BIC", company != null ? company.getBic() : "");
+            if (isNotBlank(invoice.getVariableSymbol())) {
+                text(doc, details, "VariableSymbol", invoice.getVariableSymbol());
             }
-            if (isNotBlank(company.getIban())) {
-                text(doc, details, "IBAN", company.getIban());
-            }
-            if (isNotBlank(company.getBic())) {
-                text(doc, details, "BIC", company.getBic());
-            }
-        }
-        if (!cash && isNotBlank(invoice.getVariableSymbol())) {
-            text(doc, details, "VariableSymbol", invoice.getVariableSymbol());
         }
     }
 
